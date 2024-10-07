@@ -1,0 +1,218 @@
+---
+"12:0":
+  mono_mass: 200.177630004
+  carbons: 12
+  double_bonds: 0
+"14:0":
+  mono_mass: 228.208930132
+  carbons: 14
+  double_bonds: 0
+"14:1":
+  mono_mass: 226.193280068
+  carbons: 14
+  double_bonds: 1
+"15:0":
+  mono_mass: 242.224580195
+  carbons: 15
+  double_bonds: 0
+"15:1":
+  mono_mass: 240.208930132
+  carbons: 15
+  double_bonds: 1
+"16:0":
+  mono_mass: 256.240230259
+  carbons: 16
+  double_bonds: 0
+"16:1":
+  mono_mass: 254.224580195
+  carbons: 16
+  double_bonds: 1
+"17:0":
+  mono_mass: 270.255880323
+  carbons: 17
+  double_bonds: 0
+"17:1":
+  mono_mass: 268.240230259
+  carbons: 17
+  double_bonds: 1
+"17:2":
+  mono_mass: 266.224580195
+  carbons: 17
+  double_bonds: 2
+"18:0":
+  mono_mass: 284.271530387
+  carbons: 18
+  double_bonds: 0
+"18:1":
+  mono_mass: 282.255880323
+  carbons: 18
+  double_bonds: 1
+"18:2":
+  mono_mass: 280.240230259
+  carbons: 18
+  double_bonds: 2
+"18:3":
+  mono_mass: 278.224580195
+  carbons: 18
+  double_bonds: 3
+"19:0":
+  mono_mass: 298.287180451
+  carbons: 19
+  double_bonds: 0
+"20:0":
+  mono_mass: 312.302830514
+  carbons: 20
+  double_bonds: 0
+"20:1":
+  mono_mass: 310.287180451
+  carbons: 20
+  double_bonds: 1
+"20:2":
+  mono_mass: 308.271530387
+  carbons: 20
+  double_bonds: 2
+"20:3":
+  mono_mass: 306.255880323
+  carbons: 20
+  double_bonds: 3
+"20:4":
+  mono_mass: 304.240230259
+  carbons: 20
+  double_bonds: 4
+"20:5":
+  mono_mass: 302.224580195
+  carbons: 20
+  double_bonds: 5
+"21:0":
+  mono_mass: 326.318480578
+  carbons: 21
+  double_bonds: 0
+"22:0":
+  mono_mass: 340.334130642
+  carbons: 22
+  double_bonds: 0
+"22:1":
+  mono_mass: 338.318480578
+  carbons: 22
+  double_bonds: 1
+"22:2":
+  mono_mass: 336.302830514
+  carbons: 22
+  double_bonds: 2
+"22:3":
+  mono_mass: 334.287180451
+  carbons: 22
+  double_bonds: 3
+"22:4":
+  mono_mass: 332.271530387
+  carbons: 22
+  double_bonds: 4
+"22:5":
+  mono_mass: 330.255880323
+  carbons: 22
+  double_bonds: 5
+"22:6":
+  mono_mass: 328.240230259
+  carbons: 22
+  double_bonds: 6
+"24:0":
+  mono_mass: 368.365430770
+  carbons: 24
+  double_bonds: 0
+"24:1":
+  mono_mass: 366.349780706
+  carbons: 24
+  double_bonds: 1
+"24:4":
+  mono_mass: 360.302830514
+  carbons: 24
+  double_bonds: 4
+"24:5":
+  mono_mass: 358.287180451
+  carbons: 24
+  double_bonds: 5
+"24:6":
+  mono_mass: 356.271530387
+  carbons: 24
+  double_bonds: 6
+"25:0":
+  mono_mass: 382.381080833
+  carbons: 25
+  double_bonds: 0
+"26:0":
+  mono_mass: 396.396730897
+  carbons: 26
+  double_bonds: 0
+"26:1":
+  mono_mass: 394.381080833
+  carbons: 26
+  double_bonds: 1
+"26:2":
+  mono_mass: 392.365430770
+  carbons: 26
+  double_bonds: 2
+"26:4":
+  mono_mass: 388.334130642
+  carbons: 26
+  double_bonds: 4
+"26:5":
+  mono_mass: 386.318480578
+  carbons: 26
+  double_bonds: 5
+"26:6":
+  mono_mass: 384.302830514
+  carbons: 26
+  double_bonds: 6
+"28:4":
+  mono_mass: 416.365430770
+  carbons: 28
+  double_bonds: 4
+"28:5":
+  mono_mass: 414.349780706
+  carbons: 28
+  double_bonds: 5
+"28:6":
+  mono_mass: 412.334130642
+  carbons: 28
+  double_bonds: 6
+"30:5":
+  mono_mass: 442.381080833
+  carbons: 30
+  double_bonds: 5
+"30:6":
+  mono_mass: 440.365430770
+  carbons: 30
+  double_bonds: 6
+"32:4":
+  mono_mass: 472.42803102
+  carbons: 32
+  double_bonds: 4
+"32:5":
+  mono_mass: 470.412380961
+  carbons: 32
+  double_bonds: 5
+"32:6":
+  mono_mass: 468.396730897
+  carbons: 32
+  double_bonds: 6
+"34:4":
+  mono_mass: 500.45933115
+  carbons: 34
+  double_bonds: 4
+"34:5":
+  mono_mass: 498.44368109
+  carbons: 34
+  double_bonds: 5
+"34:6":
+  mono_mass: 496.42803102
+  carbons: 34
+  double_bonds: 6
+"36:5":
+  mono_mass: 526.47498122
+  carbons: 36
+  double_bonds: 5
+"36:6":
+  mono_mass: 524.45933115
+  carbons: 36
+  double_bonds: 6
+...

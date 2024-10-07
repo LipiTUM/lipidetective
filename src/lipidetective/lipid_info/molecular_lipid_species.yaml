@@ -1,0 +1,292 @@
+---
+# PA
+PA 14:0_14:0:
+  sum_species: "PA 28:0"
+  headgroup: "PA"
+  fatty_acid_sn1: "14:0"
+  fatty_acid_sn2: "14:0"
+PA 16:0_16:0:
+  sum_species: "PA 32:0"
+  headgroup: "PA"
+  fatty_acid_sn1: "16:0"
+  fatty_acid_sn2: "16:0"
+PA 16:0_18:1:
+  sum_species: "PA 34:1"
+  headgroup: "PA"
+  fatty_acid_sn1: "16:0"
+  fatty_acid_sn2: "18:1"
+PA 16:0_18:2:
+  sum_species: "PA 34:2"
+  headgroup: "PA"
+  fatty_acid_sn1: "16:0"
+  fatty_acid_sn2: "18:2"
+PA 16:0_20:4:
+  sum_species: "PA 36:4"
+  headgroup: "PA"
+  fatty_acid_sn1: "16:0"
+  fatty_acid_sn2: "20:4"
+PA 16:0_22:6:
+  sum_species: "PA 38:6"
+  headgroup: "PA"
+  fatty_acid_sn1: "16:0"
+  fatty_acid_sn2: "22:6"
+PA 17:0_17:0:
+  sum_species: "PA 34:0"
+  headgroup: "PA"
+  fatty_acid_sn1: "17:0"
+  fatty_acid_sn2: "17:0"
+PA 18:0_18:0:
+  sum_species: "PA 36:0"
+  headgroup: "PA"
+  fatty_acid_sn1: "18:0"
+  fatty_acid_sn2: "18:0"
+# PC
+PC 14:0_14:0:
+  sum_species: "PC 28:0"
+  headgroup: "PC"
+  fatty_acid_sn1: "14:0"
+  fatty_acid_sn2: "14:0"
+PC 15:0_15:0:
+  sum_species: "PC 30:0"
+  headgroup: "PC"
+  fatty_acid_sn1: "15:0"
+  fatty_acid_sn2: "15:0"
+PC 16:0_16:0:
+  sum_species: "PC 32:0"
+  headgroup: "PC"
+  fatty_acid_sn1: "16:0"
+  fatty_acid_sn2: "16:0"
+PC 16:0_18:0:
+  sum_species: "PC 34:0"
+  headgroup: "PC"
+  fatty_acid_sn1: "16:0"
+  fatty_acid_sn2: "18:0"
+PC 16:0_18:1:
+  sum_species: "PC 34:1"
+  headgroup: "PC"
+  fatty_acid_sn1: "16:0"
+  fatty_acid_sn2: "18:1"
+PC 16:0_18:2:
+  sum_species: "PC 34:2"
+  headgroup: "PC"
+  fatty_acid_sn1: "16:0"
+  fatty_acid_sn2: "18:2"
+PC 16:0_20:4:
+  sum_species: "PC 36:4"
+  headgroup: "PC"
+  fatty_acid_sn1: "16:0"
+  fatty_acid_sn2: "20:4"
+PC 16:0_22:6:
+  sum_species: "PC 38:6"
+  headgroup: "PC"
+  fatty_acid_sn1: "16:0"
+  fatty_acid_sn2: "22:6"
+PC 17:0_17:0:
+  sum_species: "PC 34:0"
+  headgroup: "PC"
+  fatty_acid_sn1: "17:0"
+  fatty_acid_sn2: "17:0"
+PC 18:0_16:0:
+  sum_species: "PC 34:0"
+  headgroup: "PC"
+  fatty_acid_sn1: "18:0"
+  fatty_acid_sn2: "16:0"
+PC 18:0_18:0:
+  sum_species: "PC 36:0"
+  headgroup: "PC"
+  fatty_acid_sn1: "18:0"
+  fatty_acid_sn2: "18:0"
+PC 18:0_18:1:
+  sum_species: "PC 36:1"
+  headgroup: "PC"
+  fatty_acid_sn1: "18:0"
+  fatty_acid_sn2: "18:1"
+PC 18:0_18:2:
+  sum_species: "PC 36:2"
+  headgroup: "PC"
+  fatty_acid_sn1: "18:0"
+  fatty_acid_sn2: "18:2"
+PC 18:0_20:4:
+  sum_species: "PC 38:4"
+  headgroup: "PC"
+  fatty_acid_sn1: "18:0"
+  fatty_acid_sn2: "20:4"
+PC 18:0_22:6:
+  sum_species: "PC 40:6"
+  headgroup: "PC"
+  fatty_acid_sn1: "18:0"
+  fatty_acid_sn2: "22:6"
+PC 18:1_16:0:
+  sum_species: "PC 34:1"
+  headgroup: "PC"
+  fatty_acid_sn1: "18:1"
+  fatty_acid_sn2: "16:0"
+PC 18:1_18:0:
+  sum_species: "PC 36:1"
+  headgroup: "PC"
+  fatty_acid_sn1: "18:1"
+  fatty_acid_sn2: "18:0"
+PC 20:0_20:0:
+  sum_species: "PC 40:0"
+  headgroup: "PC"
+  fatty_acid_sn1: "20:0"
+  fatty_acid_sn2: "20:0"
+PC 22:0_22:0:
+  sum_species: "PC 44:0"
+  headgroup: "PC"
+  fatty_acid_sn1: "22:0"
+  fatty_acid_sn2: "22:0"
+# PE
+PE 14:0_14:0:
+  sum_species: "PE 28:0"
+  headgroup: "PE"
+  fatty_acid_sn1: "14:0"
+  fatty_acid_sn2: "14:0"
+PE 15:0_15:0:
+  sum_species: "PE 30:0"
+  headgroup: "PE"
+  fatty_acid_sn1: "15:0"
+  fatty_acid_sn2: "15:0"
+PE 16:0_16:0:
+  sum_species: "PE 32:0"
+  headgroup: "PE"
+  fatty_acid_sn1: "16:0"
+  fatty_acid_sn2: "16:0"
+PE 16:0_18:1:
+  sum_species: "PE 34:1"
+  headgroup: "PE"
+  fatty_acid_sn1: "16:0"
+  fatty_acid_sn2: "18:1"
+PE 16:0_18:2:
+  sum_species: "PE 34:2"
+  headgroup: "PE"
+  fatty_acid_sn1: "16:0"
+  fatty_acid_sn2: "18:2"
+PE 16:0_20:4:
+  sum_species: "PE 36:4"
+  headgroup: "PE"
+  fatty_acid_sn1: "16:0"
+  fatty_acid_sn2: "20:4"
+PE 16:0_22:6:
+  sum_species: "PE 38:6"
+  headgroup: "PE"
+  fatty_acid_sn1: "16:0"
+  fatty_acid_sn2: "22:6"
+PE 17:0_17:0:
+  sum_species: "PE 34:0"
+  headgroup: "PE"
+  fatty_acid_sn1: "17:0"
+  fatty_acid_sn2: "17:0"
+PE 18:0_18:0:
+  sum_species: "PE 36:0"
+  headgroup: "PE"
+  fatty_acid_sn1: "18:0"
+  fatty_acid_sn2: "18:0"
+PE 18:0_18:1:
+  sum_species: "PE 36:1"
+  headgroup: "PE"
+  fatty_acid_sn1: "18:0"
+  fatty_acid_sn2: "18:1"
+PE 18:0_18:2:
+  sum_species: "PE 36:2"
+  headgroup: "PE"
+  fatty_acid_sn1: "18:0"
+  fatty_acid_sn2: "18:2"
+PE 18:0_20:4:
+  sum_species: "PE 38:4"
+  headgroup: "PE"
+  fatty_acid_sn1: "18:0"
+  fatty_acid_sn2: "20:4"
+PE 18:0_22:6:
+  sum_species: "PE 40:6"
+  headgroup: "PE"
+  fatty_acid_sn1: "18:0"
+  fatty_acid_sn2: "22:6"
+# PG
+PG 14:0_14:0:
+  sum_species: "PG 28:0"
+  headgroup: "PG"
+  fatty_acid_sn1: "14:0"
+  fatty_acid_sn2: "14:0"
+PG 15:0_15:0:
+  sum_species: "PG 30:0"
+  headgroup: "PG"
+  fatty_acid_sn1: "15:0"
+  fatty_acid_sn2: "15:0"
+PG 16:0_16:0:
+  sum_species: "PG 32:0"
+  headgroup: "PG"
+  fatty_acid_sn1: "16:0"
+  fatty_acid_sn2: "16:0"
+PG 16:0_18:1:
+  sum_species: "PG 34:1"
+  headgroup: "PG"
+  fatty_acid_sn1: "16:0"
+  fatty_acid_sn2: "18:1"
+PG 16:0_18:2:
+  sum_species: "PG 34:2"
+  headgroup: "PG"
+  fatty_acid_sn1: "16:0"
+  fatty_acid_sn2: "18:2"
+PG 16:0_20:4:
+  sum_species: "PG 36:4"
+  headgroup: "PG"
+  fatty_acid_sn1: "16:0"
+  fatty_acid_sn2: "20:4"
+PG 16:0_22:6:
+  sum_species: "PG 38:6"
+  headgroup: "PG"
+  fatty_acid_sn1: "16:0"
+  fatty_acid_sn2: "22:6"
+PG 17:0_17:0:
+  sum_species: "PG 34:0"
+  headgroup: "PG"
+  fatty_acid_sn1: "17:0"
+  fatty_acid_sn2: "17:0"
+PG 18:0_18:0:
+  sum_species: "PG 36:0"
+  headgroup: "PG"
+  fatty_acid_sn1: "18:0"
+  fatty_acid_sn2: "18:0"
+# PS
+PS 14:0_14:0:
+  sum_species: "PS 28:0"
+  headgroup: "PS"
+  fatty_acid_sn1: "14:0"
+  fatty_acid_sn2: "14:0"
+PS 16:0_16:0:
+  sum_species: "PS 32:0"
+  headgroup: "PS"
+  fatty_acid_sn1: "16:0"
+  fatty_acid_sn2: "16:0"
+PS 16:0_18:1:
+  sum_species: "PS 34:1"
+  headgroup: "PS"
+  fatty_acid_sn1: "16:0"
+  fatty_acid_sn2: "18:1"
+PS 16:0_18:2:
+  sum_species: "PS 34:2"
+  headgroup: "PS"
+  fatty_acid_sn1: "16:0"
+  fatty_acid_sn2: "18:2"
+PS 16:0_20:4:
+  sum_species: "PS 36:4"
+  headgroup: "PS"
+  fatty_acid_sn1: "16:0"
+  fatty_acid_sn2: "20:4"
+PS 16:0_22:6:
+  sum_species: "PS 38:6"
+  headgroup: "PS"
+  fatty_acid_sn1: "16:0"
+  fatty_acid_sn2: "22:6"
+PS 17:0_17:0:
+  sum_species: "PS 34:0"
+  headgroup: "PS"
+  fatty_acid_sn1: "17:0"
+  fatty_acid_sn2: "17:0"
+PS 18:0_18:0:
+  sum_species: "PS 36:0"
+  headgroup: "PS"
+  fatty_acid_sn1: "18:0"
+  fatty_acid_sn2: "18:0"
+...

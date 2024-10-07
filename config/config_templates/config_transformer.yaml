@@ -1,0 +1,57 @@
+---
+model: 'transformer'
+cuda:
+  gpu_nr: [1]
+files:
+   train_input: '/path/to/train_dataset.hdf5'
+   val_input: '/path/to/val_dataset.hdf5'
+   test_input: '/path/to/test_dataset.hdf5'
+   predict_input: "/path/to/val_data.mzML"
+   saved_model: "/path/to/saved/lipidetective_model.pth"
+   output: '/path/to/output/folder'
+   splitting_instructions: '/path/to/validation_splits/train_val_split.yaml'
+workflow:
+  train: False
+  validate: False
+  test: False
+  tune: False
+  predict: True
+  save_model: False
+  load_model: True
+  log_every_n_steps: 10
+training:
+  k: 6
+  learning_rate: 0.004
+  lr_step: 2
+  epochs: 15
+  batch: 512
+  nr_workers: 0
+test:
+  batch: 512
+  confidence_score: True
+tune:
+   nr_trials: 1
+   grace_period: 2
+   resources_per_trial: null # CPUs and GPUs according to availability
+predict:
+  output: "best_prediction" # to return the top three predictions set this to "top3"
+  batch: 512
+  save_spectrum: False
+  confidence_threshold: 0.98
+  keep_empty: False
+  keep_wrong_polarity_preds: False
+input_embedding:
+  n_peaks: 30
+  max_mz: 1600
+  decimal_accuracy: 1
+transformer:
+  d_model: 32 # embedding dimension d_model must be divisible by num_heads
+  num_heads: 4
+  dropout: 0.1
+  ffn_hidden: 256
+  num_layers: 2
+  output_seq_length: 11
+# wandb: # Uncomment if you want to use wandb
+#  group: 'Debugging'
+comment: 'Info on the purpose of the current run'
+...

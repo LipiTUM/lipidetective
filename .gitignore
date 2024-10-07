@@ -1,0 +1,28 @@
+# Default ignored files
+/shelf/
+/workspace.xml
+.DS_Store
+.ipynb_checkpoints
+
+# jetbrains
+*.idea/
+
+# compiled files
+__pycache__/
+
+# Datasource local storage ignored files
+data/
+/dataSources/
+/dataSources.local.xml
+dist/
+
+# Editor-based HTTP Client requests
+/httpRequests/
+
+/docs/build
+/docs/source/_templates
+/docs/source/*.rst
+/docs/source/*.py
+/docs/make.bat
+/docs/Makefile
+/notebooks/
