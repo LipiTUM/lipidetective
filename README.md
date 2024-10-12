@@ -43,5 +43,19 @@ Ensure that the YAML configuration file is correctly set up with the necessary p
 The configuration file should be in YAML format and contain paths to your HDF5 training files or mzML prediction files,
 along with any additional parameters required for the model. A template is provided in the folder `config/config_templates`. 
 
+## Citation
+If you want to use LipiDetective for your own work, please cite our [manuscript](https://doi.org/10.1101/2024.10.07.617094)
+
+```text
+@article{Wuerf:2024,
+    title={LipiDetective - a deep learning model for the identification of molecular lipid species in tandem mass spectra},
+    author={W\"urf, Vivian and K\"ohler, Nikolai and Molnar, Florian and Hahnefeld, Lisa and Gurke, Robert and Witting, Michael and Pauling, Josch K},
+    journal={bioRxiv},
+    year={2024},
+    publisher={Cold Spring Harbor Laboratory},
+    doi={https://doi.org/10.1101/2024.10.07.617094}
+}
+```
+
 ## License
 This project is licensed under the BSD 3-Clause License - see the `LICENSE` file for details.
