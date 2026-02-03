@@ -21,8 +21,27 @@ dist/
 
 /docs/build
 /docs/source/_templates
-/docs/source/*.rst
 /docs/source/*.py
+!/docs/source/conf.py
 /docs/make.bat
 /docs/Makefile
 /notebooks/
+/specs/
+config/config.yaml
+
+# Coverage
+.coverage
+coverage.xml
+htmlcov/
+
+# Caches
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+
+# Build artifacts
+*.egg-info/
+build/
+
+CLAUDE.md
+.claude
