@@ -68,6 +68,10 @@ class LightningModule(pl.LightningModule):
             )
             self.test_predictions = CatMetric()
 
+    def _has_custom_logger(self) -> bool:
+        """Check if the custom logger is being used."""
+        return self.logger is not None and self.logger.name == "custom_logger"
+
     def configure_optimizers(self):
         optimizer = optim.Adam(self.model.parameters(), lr=self.config["training"]["learning_rate"])
         scheduler = optim.lr_scheduler.StepLR(
@@ -91,7 +95,7 @@ class LightningModule(pl.LightningModule):
                 output_tokens, tgt_expected, "transformer", is_last_epoch
             )
 
-            if self.logger is not None and self.logger.name == "custom_logger":
+            if self._has_custom_logger():
                 preds_vs_labels = self.get_preds_vs_labels(
                     batch_idx, output_tokens, tgt_expected, dataset_path
                 )
@@ -181,7 +185,7 @@ class LightningModule(pl.LightningModule):
                 batch_size=self.batch_size,
             )
 
-            if self.logger is not None and self.logger.name == "custom_logger":
+            if self._has_custom_logger():
                 preds_vs_labels = self.get_preds_vs_labels(batch_idx, output, labels, dataset_path)
                 self.train_predictions(preds_vs_labels)
                 self.logger.log_predictions(self.train_predictions, batch_idx, "train")
@@ -203,7 +207,7 @@ class LightningModule(pl.LightningModule):
                 output_tokens, tgt_expected, "transformer", is_last_epoch
             )
 
-            if self.logger is not None and self.logger.name == "custom_logger":
+            if self._has_custom_logger():
                 preds_vs_labels = self.get_preds_vs_labels(
                     batch_idx, output_tokens, tgt_expected, dataset_path
                 )
@@ -288,7 +292,7 @@ class LightningModule(pl.LightningModule):
                 batch_size=self.batch_size,
             )
 
-            if self.logger is not None and self.logger.name == "custom_logger":
+            if self._has_custom_logger():
                 preds_vs_labels = self.get_preds_vs_labels(batch_idx, output, labels, dataset_path)
                 self.val_predictions(preds_vs_labels)
                 self.logger.log_predictions(self.val_predictions, batch_idx, "val")
@@ -308,7 +312,7 @@ class LightningModule(pl.LightningModule):
 
             accuracy_dict = self.test_custom_accuracy(top_tokens, labels_temp, "transformer", True)
 
-            if self.logger is not None and self.logger.name == "custom_logger":
+            if self._has_custom_logger():
                 preds_vs_labels = self.get_test_preds_vs_labels(
                     top_tokens, labels_temp, dataset_path, top_probs
                 )
@@ -342,7 +346,7 @@ class LightningModule(pl.LightningModule):
         if isinstance(self.model, TransformerNetwork):
             probabilities, tokens = self.model.predict_top_3(features)
 
-            if self.logger is not None and self.logger.name == "custom_logger":
+            if self._has_custom_logger():
                 self.logger.log_predictions(tokens, probabilities, spectrum_info)
 
     def get_preds_vs_labels(self, batch_idx, output, labels, dataset_path):
