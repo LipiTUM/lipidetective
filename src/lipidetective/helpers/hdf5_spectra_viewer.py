@@ -142,7 +142,7 @@ class SpectraViewer:
 
     def update_folder_info(self):
         options_len = len(self.selection_column[-1].options)  # type: ignore[union-attr]
-        return rf"\# of spectra in this group: **{options_len}**"
+        return f"\\# of spectra in this group: **{options_len}**"
 
     def close_app(self, event):
         self.experiment.close()
