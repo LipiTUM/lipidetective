@@ -389,7 +389,7 @@ class Trainer:
             valset_lipids=valset_lipids,
         )
 
-        trial_dir = ray.train.get_context().get_trial_dir()  # type: ignore[attr-defined]
+        trial_dir = ray.train.get_context().get_trial_dir()
 
         tb_logger = pl_loggers.TensorBoardLogger(save_dir=trial_dir, name="tb_logger", version=".")
         csv_logger = pl_loggers.CSVLogger(save_dir=trial_dir, name="csv_logger", version=".")
