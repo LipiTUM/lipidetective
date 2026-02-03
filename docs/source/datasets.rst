@@ -8,6 +8,6 @@ files for lipid identification in a prediction setting.
 H5Dataset
 ---------------
 
-.. autoclass:: workflow.h5_dataset.H5Dataset
+.. autoclass:: lipidetective.workflow.h5_dataset.H5Dataset
     :members:
     :undoc-members:
