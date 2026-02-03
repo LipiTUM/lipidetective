@@ -98,10 +98,9 @@ class PredictionDataset(Dataset):
                 constant_values=(0, 0),
             )
 
-        features_arr = sorted_spectrum[:n_peaks]
-
-        features_arr = features_arr[:, 0]
-        features = torch.IntTensor(features_arr * (10**decimal_accuracy))
+        spectrum_peaks = sorted_spectrum[:n_peaks]
+        mz_values = spectrum_peaks[:, 0]
+        features = torch.IntTensor(mz_values * (10**decimal_accuracy))
 
         precursor_mz = int(float(precursor) * (10**decimal_accuracy))
 
