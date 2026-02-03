@@ -1,13 +1,13 @@
 import math
+import os
+import pathlib
+
 import torch
 import torch.nn as nn
-import pathlib
-import os
-
-from torch.autograd import Variable
 from torch import Tensor
+from torch.autograd import Variable
 
-from src.lipidetective.helpers.utils import read_yaml
+from lipidetective.helpers.utils import read_yaml
 
 
 class TransformerNetwork(nn.Module):
@@ -16,18 +16,18 @@ class TransformerNetwork(nn.Module):
 
         self.config = config
         self.output_attentions = output_attentions
-        self.seq_length = self.config['transformer']['output_seq_length']
+        self.seq_length = self.config["transformer"]["output_seq_length"]
 
         cwd = pathlib.Path(__file__).parent.parent.resolve()
-        self.tokens = read_yaml(os.path.join(cwd, 'lipid_info/lipid_components_tokens.yaml'))
+        self.tokens = read_yaml(os.path.join(cwd, "lipid_info/lipid_components_tokens.yaml"))
         out_vocab_size = len(self.tokens)
 
         self.encoder = Encoder(config)
         self.decoder = Decoder(config, out_vocab_size)
 
         self.final_lin_layer = torch.nn.Linear(
-            in_features=self.config['transformer']['d_model'],
-            out_features=out_vocab_size)  # tgt vocab size - 30
+            in_features=self.config["transformer"]["d_model"], out_features=out_vocab_size
+        )  # tgt vocab size - 30
 
     def init_weights(self) -> None:
         initrange = 0.1
@@ -39,7 +39,9 @@ class TransformerNetwork(nn.Module):
         src_padding_mask, tgt_padding_mask, nopeak_mask = self.generate_mask(src, tgt)
 
         encoder_output = self.encoder(src, src_padding_mask)
-        decoder_output = self.decoder(tgt, encoder_output, nopeak_mask, tgt_padding_mask, src_padding_mask)
+        decoder_output = self.decoder(
+            tgt, encoder_output, nopeak_mask, tgt_padding_mask, src_padding_mask
+        )
 
         output = self.final_lin_layer(decoder_output)
 
@@ -50,16 +52,20 @@ class TransformerNetwork(nn.Module):
             return output
 
     def generate_mask(self, src: Tensor, tgt: Tensor):
-        src_padding_mask = (src == 0)
-        tgt_padding_mask = (tgt == 0)
+        src_padding_mask = src == 0
+        tgt_padding_mask = tgt == 0
 
         seq_length = tgt.size(1)
-        nopeak_mask = torch.triu(torch.ones(seq_length, seq_length), diagonal=1).bool().type_as(tgt_padding_mask)
+        nopeak_mask = (
+            torch.triu(torch.ones(seq_length, seq_length), diagonal=1)
+            .bool()
+            .type_as(tgt_padding_mask)
+        )
 
         return src_padding_mask, tgt_padding_mask, nopeak_mask
 
     def predict(self, src):
-        src_padding_mask = (src == 0)
+        src_padding_mask = src == 0
         tgt = (torch.zeros((src.shape[0], self.seq_length))).type_as(src).long()
         tgt[:, 0] = 1
 
@@ -69,7 +75,7 @@ class TransformerNetwork(nn.Module):
         return tgt[:, 1:]
 
     def predict_top_3(self, src):
-        src_padding_mask = (src == 0)
+        src_padding_mask = src == 0
         tgt = (torch.zeros((src.shape[0], self.seq_length))).type_as(src).long()
         tgt[:, 0] = 1
 
@@ -78,7 +84,9 @@ class TransformerNetwork(nn.Module):
         nr_beams = 3
         batch_size = tgt.shape[0]
 
-        first_output = self.decoder(tgt[:, :1], encoder_output, memory_padding_mask=src_padding_mask)
+        first_output = self.decoder(
+            tgt[:, :1], encoder_output, memory_padding_mask=src_padding_mask
+        )
         first_output = nn.functional.softmax(self.final_lin_layer(first_output), dim=-1)
 
         first_output_values, first_output_tokens = torch.topk(first_output[:, -1], nr_beams, dim=-1)
@@ -89,28 +97,34 @@ class TransformerNetwork(nn.Module):
             new_tgt[:, 0] = 1
             new_tgt[:, 1] = first_output_tokens[:, i]
             probabilities = torch.unsqueeze(torch.log(first_output_values[:, i]), dim=-1)
-            beam_cache[i] = {'tokens': new_tgt, 'probabilities': probabilities}
+            beam_cache[i] = {"tokens": new_tgt, "probabilities": probabilities}
 
         for idx in range(2, self.seq_length):
-            candidates = {'tokens': [], 'probabilities': [], 'beam_tokens': []}
+            candidates: dict[str, list[Tensor]] = {
+                "tokens": [],
+                "probabilities": [],
+                "beam_tokens": [],
+            }
 
-            for beam_nr, beam in beam_cache.items():
-                tgt_temp = beam['tokens'][:, :idx]
+            for _beam_nr, beam in beam_cache.items():
+                tgt_temp = beam["tokens"][:, :idx]
 
-                output = self.decoder(tgt_temp, encoder_output, memory_padding_mask=src_padding_mask)
+                output = self.decoder(
+                    tgt_temp, encoder_output, memory_padding_mask=src_padding_mask
+                )
                 output = nn.functional.softmax(self.final_lin_layer(output), dim=-1)
                 log_output = torch.log(output[:, -1])
 
-                updated_probabilities = torch.add(log_output, beam['probabilities'])
+                updated_probabilities = torch.add(log_output, beam["probabilities"])
                 output_probs, output_tokens = torch.topk(updated_probabilities, nr_beams, dim=-1)
 
-                candidates['tokens'].append(output_tokens)
-                candidates['probabilities'].append(output_probs)
-                candidates['beam_tokens'].append(tgt_temp)
+                candidates["tokens"].append(output_tokens)
+                candidates["probabilities"].append(output_probs)
+                candidates["beam_tokens"].append(tgt_temp)
 
-            tokens = torch.cat(candidates['tokens'], dim=1)
-            probabilities = torch.cat(candidates['probabilities'], dim=1)
-            beam_tokens = torch.stack(candidates['beam_tokens'], dim=1)
+            tokens = torch.cat(candidates["tokens"], dim=1)
+            probabilities = torch.cat(candidates["probabilities"], dim=1)
+            beam_tokens = torch.stack(candidates["beam_tokens"], dim=1)
 
             top3_probs, top3_idx = torch.topk(probabilities, nr_beams, dim=-1)
 
@@ -125,20 +139,22 @@ class TransformerNetwork(nn.Module):
                 beam_tokens = top3_beam_tokens[:, beam_nr]
                 tokens = top3_tokens[:, beam_nr]
 
-                tokens_to_update = beam['tokens']
+                tokens_to_update = beam["tokens"]
 
-                beam['probabilities'] = torch.unsqueeze(top3_probs[:, beam_nr], dim=-1)
+                beam["probabilities"] = torch.unsqueeze(top3_probs[:, beam_nr], dim=-1)
 
                 tokens_to_update[:, :idx] = beam_tokens
                 tokens_to_update[:, idx] = tokens
 
-        final_probabilities = torch.cat([beam['probabilities'] for beam in beam_cache.values()], dim=1)
-        final_tokens = torch.stack([beam['tokens'] for beam in beam_cache.values()], dim=1)
+        final_probabilities = torch.cat(
+            [beam["probabilities"] for beam in beam_cache.values()], dim=1
+        )
+        final_tokens = torch.stack([beam["tokens"] for beam in beam_cache.values()], dim=1)
 
         return final_probabilities, final_tokens
 
     def predict_beam_decode(self, src):
-        src_padding_mask = (src == 0)
+        src_padding_mask = src == 0
         tgt = (torch.zeros((src.shape[0], self.seq_length))).type_as(src).long()
         tgt[:, 0] = 1
 
@@ -148,7 +164,7 @@ class TransformerNetwork(nn.Module):
         return tgt[:, 1:]
 
     def predict_greedy(self, src):
-        src_padding_mask = (src == 0)
+        src_padding_mask = src == 0
         tgt = (torch.zeros((src.shape[0], self.seq_length))).type_as(src).long()
         tgt[:, 0] = 1
 
@@ -158,7 +174,7 @@ class TransformerNetwork(nn.Module):
         return tgt[:, 1:]
 
     def return_encoder_embedding(self, src):
-        src_padding_mask = (src == 0)
+        src_padding_mask = src == 0
         encoder_output = self.encoder(src, src_padding_mask)
 
         return encoder_output
@@ -176,7 +192,9 @@ class TransformerNetwork(nn.Module):
         nr_beams = 3
         batch_size = tgt.shape[0]
 
-        first_output = self.decoder(tgt[:, :1], encoder_output, memory_padding_mask=memory_padding_mask)
+        first_output = self.decoder(
+            tgt[:, :1], encoder_output, memory_padding_mask=memory_padding_mask
+        )
         first_output = nn.functional.softmax(self.final_lin_layer(first_output), dim=-1)
 
         first_output_values, first_output_tokens = torch.topk(first_output[:, -1], nr_beams, dim=-1)
@@ -189,35 +207,43 @@ class TransformerNetwork(nn.Module):
             new_tgt[:, 0] = 1
             new_tgt[:, 1] = first_output_tokens[:, i]
             probabilities = torch.unsqueeze(torch.log(first_output_values[:, i]), dim=-1)
-            beam_cache[i] = {'tokens': new_tgt, 'probabilities': probabilities}
+            beam_cache[i] = {"tokens": new_tgt, "probabilities": probabilities}
 
         for idx in range(2, self.seq_length):
-            candidates = {'tokens': [], 'probabilities': [], 'beam_tokens': []}
+            candidates: dict[str, list[Tensor]] = {
+                "tokens": [],
+                "probabilities": [],
+                "beam_tokens": [],
+            }
 
-            for beam_nr, beam in beam_cache.items():
-                tgt_temp = beam['tokens'][:, :idx]
+            for _beam_nr, beam in beam_cache.items():
+                tgt_temp = beam["tokens"][:, :idx]
 
-                output = self.decoder(tgt_temp, encoder_output, memory_padding_mask=memory_padding_mask)
+                output = self.decoder(
+                    tgt_temp, encoder_output, memory_padding_mask=memory_padding_mask
+                )
                 output = nn.functional.softmax(self.final_lin_layer(output), dim=-1)
                 log_output = torch.log(output[:, -1])
 
-                updated_probabilities = torch.add(log_output, beam['probabilities'])
+                updated_probabilities = torch.add(log_output, beam["probabilities"])
                 output_probs, output_tokens = torch.topk(updated_probabilities, nr_beams, dim=-1)
 
-                candidates['tokens'].append(output_tokens)
-                candidates['probabilities'].append(output_probs)
-                candidates['beam_tokens'].append(tgt_temp)
+                candidates["tokens"].append(output_tokens)
+                candidates["probabilities"].append(output_probs)
+                candidates["beam_tokens"].append(tgt_temp)
 
-            tokens = torch.cat(candidates['tokens'], dim=1)
-            probabilities = torch.cat(candidates['probabilities'], dim=1)
-            beam_tokens = torch.stack(candidates['beam_tokens'], dim=1)
+            tokens = torch.cat(candidates["tokens"], dim=1)
+            probabilities = torch.cat(candidates["probabilities"], dim=1)
+            beam_tokens = torch.stack(candidates["beam_tokens"], dim=1)
 
             top3_probs, top3_idx = torch.topk(probabilities, nr_beams, dim=-1)
 
             top3_tokens = torch.gather(tokens, dim=1, index=top3_idx)
 
             top3_idx_unsqueezed = top3_idx.unsqueeze(2)
-            top3_idx_unsqueezed = top3_idx_unsqueezed.expand(-1, -1, idx) # check again from here on, something in the top 3 beam token selection goes wrong. I think this should be just division by 3
+            top3_idx_unsqueezed = top3_idx_unsqueezed.expand(
+                -1, -1, idx
+            )  # check again from here on, something in the top 3 beam token selection goes wrong. I think this should be just division by 3
             top3_idx_unsqueezed = torch.floor_divide(top3_idx_unsqueezed, 3)
             top3_beam_tokens = torch.gather(beam_tokens, dim=1, index=top3_idx_unsqueezed)
 
@@ -225,15 +251,17 @@ class TransformerNetwork(nn.Module):
                 beam_tokens = top3_beam_tokens[:, beam_nr]
                 tokens = top3_tokens[:, beam_nr]
 
-                tokens_to_update = beam['tokens']
+                tokens_to_update = beam["tokens"]
 
-                beam['probabilities'] = torch.unsqueeze(top3_probs[:, beam_nr], dim=-1)
+                beam["probabilities"] = torch.unsqueeze(top3_probs[:, beam_nr], dim=-1)
 
                 tokens_to_update[:, :idx] = beam_tokens
                 tokens_to_update[:, idx] = tokens
 
-        final_probabilities = torch.cat([beam['probabilities'] for beam in beam_cache.values()], dim=1)
-        final_tokens = torch.stack([beam['tokens'] for beam in beam_cache.values()], dim=1)
+        final_probabilities = torch.cat(
+            [beam["probabilities"] for beam in beam_cache.values()], dim=1
+        )
+        final_tokens = torch.stack([beam["tokens"] for beam in beam_cache.values()], dim=1)
         top_probs = torch.argmax(final_probabilities, dim=-1)
         top_probs = torch.unsqueeze(top_probs, dim=-1).expand(-1, self.seq_length)
         top_probs = torch.unsqueeze(top_probs, dim=1)
@@ -249,8 +277,14 @@ class TransformerNetwork(nn.Module):
 
         with torch.no_grad():
             for layer in self.encoder.transformer_encoder.layers:
-                attention_weights = layer.self_attn(x, x, x, key_padding_mask=src_key_padding_mask, need_weights=True,
-                                                    average_attn_weights=False)[1]
+                attention_weights = layer.self_attn(
+                    x,
+                    x,
+                    x,
+                    key_padding_mask=src_key_padding_mask,
+                    need_weights=True,
+                    average_attn_weights=False,
+                )[1]
                 x = layer(x, src_key_padding_mask=src_key_padding_mask)
                 encoder_attention.append(attention_weights)
 
@@ -264,17 +298,15 @@ class Encoder(nn.Module):
         self.input_encoder = PeakEncoder(config)
 
         layer = torch.nn.TransformerEncoderLayer(
-            d_model=config['transformer']['d_model'],
-            nhead=config['transformer']['num_heads'],
-            dim_feedforward=config['transformer']['ffn_hidden'],
+            d_model=config["transformer"]["d_model"],
+            nhead=config["transformer"]["num_heads"],
+            dim_feedforward=config["transformer"]["ffn_hidden"],
             batch_first=True,
-            dropout=config['transformer']['dropout'],
+            dropout=config["transformer"]["dropout"],
         )
 
         self.transformer_encoder = torch.nn.TransformerEncoder(
-            layer,
-            num_layers=config['transformer']['num_layers'],
-            enable_nested_tensor=False
+            layer, num_layers=config["transformer"]["num_layers"], enable_nested_tensor=False
         )
 
     def forward(self, x, mask):
@@ -287,13 +319,13 @@ class PeakEncoder(nn.Module):
     def __init__(self, config):
         super().__init__()
         self.config = config
-        n_peaks = config['input_embedding']['n_peaks']
-        d_model = config['transformer']['d_model']
+        n_peaks = config["input_embedding"]["n_peaks"]
+        d_model = config["transformer"]["d_model"]
 
-        decimal_accuracy = config['input_embedding']['decimal_accuracy']
-        max_mz = config['input_embedding']['max_mz']
+        decimal_accuracy = config["input_embedding"]["decimal_accuracy"]
+        max_mz = config["input_embedding"]["max_mz"]
 
-        vocab_size = max_mz * 10 ** decimal_accuracy
+        vocab_size = max_mz * 10**decimal_accuracy
 
         self.input_embedding = Embedding(vocab_size, d_model)
         self.positional_encoding = PositionalEncoding(d_model, n_peaks)
@@ -329,7 +361,7 @@ class PositionalEncoding(nn.Module):
                 pe[pos, i + 1] = math.cos(pos / (10000 ** ((2 * (i + 1)) / d_model)))
 
         pe = pe.unsqueeze(0)
-        self.register_buffer('pe', pe)
+        self.register_buffer("pe", pe)
 
     def forward(self, x):
         # add constant to embedding
@@ -346,21 +378,28 @@ class Decoder(nn.Module):
         self.name_encoder = NameEncoder(config, vocab_size)
 
         layer = torch.nn.TransformerDecoderLayer(
-            d_model=config['transformer']['d_model'],
-            nhead=config['transformer']['num_heads'],
-            dim_feedforward=config['transformer']['ffn_hidden'],
+            d_model=config["transformer"]["d_model"],
+            nhead=config["transformer"]["num_heads"],
+            dim_feedforward=config["transformer"]["ffn_hidden"],
             batch_first=True,
-            dropout=config['transformer']['dropout'], )
-
-        self.transformer_decoder = torch.nn.TransformerDecoder(
-            layer,
-            num_layers=config['transformer']['num_layers']
+            dropout=config["transformer"]["dropout"],
         )
 
-    def forward(self, tgt, memory, nopeak_mask=None, tgt_padding_mask=None, memory_padding_mask=None):
+        self.transformer_decoder = torch.nn.TransformerDecoder(
+            layer, num_layers=config["transformer"]["num_layers"]
+        )
+
+    def forward(
+        self, tgt, memory, nopeak_mask=None, tgt_padding_mask=None, memory_padding_mask=None
+    ):
         tgt = self.name_encoder(tgt)
-        x = self.transformer_decoder(tgt=tgt, memory=memory, tgt_mask=nopeak_mask,
-                                     tgt_key_padding_mask=tgt_padding_mask, memory_key_padding_mask=memory_padding_mask)
+        x = self.transformer_decoder(
+            tgt=tgt,
+            memory=memory,
+            tgt_mask=nopeak_mask,
+            tgt_key_padding_mask=tgt_padding_mask,
+            memory_key_padding_mask=memory_padding_mask,
+        )
         return x
 
 
@@ -368,8 +407,8 @@ class NameEncoder(nn.Module):
     def __init__(self, config, vocab_size):
         super().__init__()
         self.config = config
-        seq_length = config['transformer']['output_seq_length']
-        d_model = config['transformer']['d_model']
+        seq_length = config["transformer"]["output_seq_length"]
+        d_model = config["transformer"]["d_model"]
 
         self.name_embedding = Embedding(vocab_size, d_model)
         self.positional_encoding = PositionalEncoding(d_model, seq_length)
