@@ -68,9 +68,11 @@ class LightningModule(pl.LightningModule):
             )
             self.test_predictions = CatMetric()
 
-    def _has_custom_logger(self) -> bool:
-        """Check if the custom logger is being used."""
-        return self.logger is not None and self.logger.name == "custom_logger"
+    def _get_custom_logger(self):
+        """Return the custom logger if active, else None."""
+        if self.logger is not None and self.logger.name == "custom_logger":
+            return self.logger
+        return None
 
     def configure_optimizers(self):
         optimizer = optim.Adam(self.model.parameters(), lr=self.config["training"]["learning_rate"])
@@ -95,12 +97,12 @@ class LightningModule(pl.LightningModule):
                 output_tokens, tgt_expected, "transformer", is_last_epoch
             )
 
-            if self._has_custom_logger():
+            if (logger := self._get_custom_logger()) is not None:
                 preds_vs_labels = self.get_preds_vs_labels(
                     batch_idx, output_tokens, tgt_expected, dataset_path
                 )
                 self.train_predictions(preds_vs_labels)
-                self.logger.log_predictions(self.train_predictions, batch_idx, "train")
+                logger.log_predictions(self.train_predictions, batch_idx, "train")
 
             output = torch.transpose(output, 1, 2)
             loss = nn.functional.cross_entropy(output, tgt_expected)
@@ -185,10 +187,10 @@ class LightningModule(pl.LightningModule):
                 batch_size=self.batch_size,
             )
 
-            if self._has_custom_logger():
+            if (logger := self._get_custom_logger()) is not None:
                 preds_vs_labels = self.get_preds_vs_labels(batch_idx, output, labels, dataset_path)
                 self.train_predictions(preds_vs_labels)
-                self.logger.log_predictions(self.train_predictions, batch_idx, "train")
+                logger.log_predictions(self.train_predictions, batch_idx, "train")
 
         return loss
 
@@ -207,12 +209,12 @@ class LightningModule(pl.LightningModule):
                 output_tokens, tgt_expected, "transformer", is_last_epoch
             )
 
-            if self._has_custom_logger():
+            if (logger := self._get_custom_logger()) is not None:
                 preds_vs_labels = self.get_preds_vs_labels(
                     batch_idx, output_tokens, tgt_expected, dataset_path
                 )
                 self.val_predictions(preds_vs_labels)
-                self.logger.log_predictions(self.val_predictions, batch_idx, "val")
+                logger.log_predictions(self.val_predictions, batch_idx, "val")
 
             output = torch.transpose(output, 1, 2)
             loss = nn.functional.cross_entropy(output, tgt_expected)
@@ -292,10 +294,10 @@ class LightningModule(pl.LightningModule):
                 batch_size=self.batch_size,
             )
 
-            if self._has_custom_logger():
+            if (logger := self._get_custom_logger()) is not None:
                 preds_vs_labels = self.get_preds_vs_labels(batch_idx, output, labels, dataset_path)
                 self.val_predictions(preds_vs_labels)
-                self.logger.log_predictions(self.val_predictions, batch_idx, "val")
+                logger.log_predictions(self.val_predictions, batch_idx, "val")
 
         return loss
 
@@ -312,12 +314,12 @@ class LightningModule(pl.LightningModule):
 
             accuracy_dict = self.test_custom_accuracy(top_tokens, labels_temp, "transformer", True)
 
-            if self._has_custom_logger():
+            if (logger := self._get_custom_logger()) is not None:
                 preds_vs_labels = self.get_test_preds_vs_labels(
                     top_tokens, labels_temp, dataset_path, top_probs
                 )
                 self.test_predictions(preds_vs_labels)
-                self.logger.log_predictions(self.test_predictions, batch_idx, "test")
+                logger.log_predictions(self.test_predictions, batch_idx, "test")
 
             loss = nn.functional.mse_loss(
                 top_tokens.to(dtype=torch.float32), labels_temp.to(dtype=torch.float32)
@@ -346,8 +348,8 @@ class LightningModule(pl.LightningModule):
         if isinstance(self.model, TransformerNetwork):
             probabilities, tokens = self.model.predict_top_3(features)
 
-            if self._has_custom_logger():
-                self.logger.log_predictions(tokens, probabilities, spectrum_info)
+            if (logger := self._get_custom_logger()) is not None:
+                logger.log_predictions(tokens, probabilities, spectrum_info)
 
     def get_preds_vs_labels(self, batch_idx, output, labels, dataset_path):
         epoch_batch = torch.tensor([self.current_epoch, batch_idx]).type_as(output)
