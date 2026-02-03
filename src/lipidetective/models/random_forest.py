@@ -30,10 +30,10 @@ class RandomForest:
         self.lipid_species = list(self.lipid_species_reference.keys())
         self.lipid_species_indices = list(range(len(self.lipid_species)))
         self.lipid_species_key = dict(
-            zip(self.lipid_species, self.lipid_species_indices, strict=False)
+            zip(self.lipid_species, self.lipid_species_indices, strict=True)
         )
         self.lipid_species_key_reverse = dict(
-            zip(self.lipid_species_indices, self.lipid_species, strict=False)
+            zip(self.lipid_species_indices, self.lipid_species, strict=True)
         )
 
     def run(self):
@@ -119,7 +119,7 @@ class RandomForest:
         mz, intensity = spectrum
         mz = list(mz)
         intensity = list(intensity)
-        features = list(zip(mz, intensity, strict=False))
+        features = list(zip(mz, intensity, strict=True))
         features.sort(key=lambda x: x[1], reverse=True)
         features = features[:30]
         features = [round(row[0], 3) for row in features]
@@ -187,7 +187,7 @@ class RandomForest:
                 classifier_hg_predictions,
                 classifier_fa1_predictions,
                 classifier_fa2_predictions,
-                strict=False,
+                strict=True,
             )
         ]
 
@@ -216,14 +216,14 @@ class RandomForest:
                 regressor_hg_predictions,
                 regressor_fa1_predictions,
                 regressor_fa2_predictions,
-                strict=False,
+                strict=True,
             )
         ]
 
         return prediction_output, regressor_hg, regressor_fa1, regressor_fa2
 
     def calculate_accuracy(self, prediction, labels, model, task):
-        prediction_comparison = list(zip(prediction, labels, strict=False))
+        prediction_comparison = list(zip(prediction, labels, strict=True))
         prediction_evaluation = []
         label_count: dict[Any, int] = {}
         labels_correct: dict[Any, int] = {}
@@ -279,7 +279,7 @@ class RandomForest:
     def check_regression_accuracy(self, prediction, label):
         checks = []
 
-        for item in list(zip(prediction, label, strict=False)):
+        for item in list(zip(prediction, label, strict=True)):
             difference = abs(item[0] - item[1])
             if difference < 0.1:
                 checks.append(True)
