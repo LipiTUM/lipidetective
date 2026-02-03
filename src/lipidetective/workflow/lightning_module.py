@@ -361,15 +361,16 @@ class LightningModule(pl.LightningModule):
         preds_vs_labels = torch.cat([output, labels, dataset_path, confidence_scores], dim=1)
         return preds_vs_labels
 
-    def get_neural_network(self):
-        if self.config["model"] == "convolutional":
+    def get_neural_network(self) -> nn.Module:
+        model_type = self.config.get("model")
+        if model_type == "convolutional":
             return ConvolutionalNetwork(self.config)
-        elif self.config["model"] == "transformer":
+        elif model_type == "transformer":
             return TransformerNetwork(self.config)
-        elif self.config["model"] == "feedforward":
+        elif model_type == "feedforward":
             return FeedForwardNetwork(self.config)
         else:
-            print(f"Model {self.config['model']} does not exist.")
+            raise ValueError(f"Unknown model type: {model_type!r}")
 
     def save_model(self, output_folder):
         output_file = os.path.join(output_folder, "lipidetective_model.pth")
