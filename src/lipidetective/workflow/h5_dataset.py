@@ -59,7 +59,7 @@ class H5Dataset(Dataset[dict[str, Any]]):
         spectrum: np.ndarray = sample[()]
         peaks = self.get_n_highest_peaks(spectrum, self.config["input_embedding"]["n_peaks"])
 
-        features: torch.Tensor  # Will be IntTensor or FloatTensor depending on network type
+        features: torch.Tensor
 
         if self.network_type == "transformer":
             # Extract only sorted m/z values as we don't need the intensities for the transformer input
