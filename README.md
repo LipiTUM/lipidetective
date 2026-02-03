@@ -1,6 +1,10 @@
 # LipiDetective
 
-**LipiDetective** is a deep learning framework designed for the identification of molecular lipid species from tandem 
+[![Lint](https://github.com/LipiTUM/lipidetective/actions/workflows/lint.yml/badge.svg)](https://github.com/LipiTUM/lipidetective/actions/workflows/lint.yml)
+[![Tests](https://github.com/LipiTUM/lipidetective/actions/workflows/test.yml/badge.svg)](https://github.com/LipiTUM/lipidetective/actions/workflows/test.yml)
+[![Documentation](https://github.com/LipiTUM/lipidetective/actions/workflows/docs.yml/badge.svg)](https://github.com/LipiTUM/lipidetective/actions/workflows/docs.yml)
+
+**LipiDetective** is a deep learning framework designed for the identification of molecular lipid species from tandem
 mass spectra.
 
 ## Features

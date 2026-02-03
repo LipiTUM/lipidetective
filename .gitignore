@@ -26,3 +26,22 @@ dist/
 /docs/make.bat
 /docs/Makefile
 /notebooks/
+/specs/
+config/config.yaml
+
+# Coverage
+.coverage
+coverage.xml
+htmlcov/
+
+# Caches
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+
+# Build artifacts
+*.egg-info/
+build/
+
+CLAUDE.md
+.claude
