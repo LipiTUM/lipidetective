@@ -4,10 +4,71 @@ import math
 import os
 import random
 import traceback
+from pathlib import Path
 
 import numpy as np
 import torch
 import yaml
+
+from lipidetective.helpers.paths import (
+    is_absolute_or_exists,
+    resolve_data_path,
+    resolve_model_path,
+    resolve_output_path,
+)
+
+
+def resolve_config_paths(config: dict) -> dict:
+    """Resolve all file paths in a configuration dictionary.
+
+    Paths can be:
+    - Absolute paths: Used as-is
+    - Relative paths: Resolved based on path type (data, model, output)
+
+    Args:
+        config: Configuration dictionary from YAML.
+
+    Returns:
+        Config with resolved absolute paths.
+    """
+    resolved = config.copy()
+
+    if "files" not in resolved:
+        return resolved
+
+    files = resolved["files"].copy()
+    resolved["files"] = files
+
+    # Data paths (train, val, test, predict inputs)
+    data_keys = ["train_input", "val_input", "test_input", "predict_input"]
+    for key in data_keys:
+        if key in files and files[key]:
+            path = files[key]
+            if not is_absolute_or_exists(path):
+                files[key] = str(resolve_data_path(path))
+
+    # Model paths
+    if "saved_model" in files and files["saved_model"]:
+        path = files["saved_model"]
+        if not is_absolute_or_exists(path):
+            files["saved_model"] = str(resolve_model_path(path))
+
+    # Output paths
+    if "output" in files and files["output"]:
+        path = files["output"]
+        if not is_absolute_or_exists(path):
+            files["output"] = str(resolve_output_path(path))
+
+    # Splitting instructions (config path)
+    if "splitting_instructions" in files and files["splitting_instructions"]:
+        path = files["splitting_instructions"]
+        if not is_absolute_or_exists(path):
+            # Splitting instructions are in config/validation_splits/
+            files["splitting_instructions"] = str(
+                Path(resolve_data_path("")).parent / "config" / path
+            )
+
+    return resolved
 
 
 def parse_config():
