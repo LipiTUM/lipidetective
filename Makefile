@@ -1,4 +1,4 @@
-.PHONY: help install install-dev test lint format type-check clean docs all
+.PHONY: help install install-dev test lint type-check clean docs all
 
 # Default target
 help:
@@ -10,11 +10,10 @@ help:
 	@echo "  make install-dev    Install development dependencies"
 	@echo ""
 	@echo "Code Quality:"
-	@echo "  make format         Auto-format code with ruff"
-	@echo "  make lint           Check code style with ruff"
+	@echo "  make lint           Auto-format and lint code with ruff"
 	@echo "  make type-check     Run mypy type checking"
 	@echo "  make test           Run pytest with coverage"
-	@echo "  make all            Run format, lint, type-check, and test"
+	@echo "  make all            Run lint, type-check, and test"
 	@echo ""
 	@echo "Documentation:"
 	@echo "  make docs           Build Sphinx documentation"
@@ -33,18 +32,13 @@ install-dev:
 	@echo "Installing development dependencies..."
 	poetry install
 
-# Code formatting
-format:
+# Linting (auto-fix)
+lint:
 	@echo "Formatting code with ruff..."
 	poetry run ruff format src/ tests/
-
-# Linting
-lint:
-	@echo "Checking code format..."
-	poetry run ruff format --check src/ tests/
 	@echo ""
-	@echo "Running ruff linter..."
-	poetry run ruff check src/ tests/
+	@echo "Running ruff linter with auto-fix..."
+	poetry run ruff check --fix src/ tests/
 
 # Type checking
 type-check:
@@ -94,6 +88,6 @@ clean:
 	@echo "Cleaned!"
 
 # Run all checks
-all: format lint type-check test
+all: lint type-check test
 	@echo ""
 	@echo "✅ All checks passed!"

@@ -1,9 +1,6 @@
 """Tests for the path resolution utilities."""
 
-import os
 from pathlib import Path
-
-import pytest
 
 from lipidetective.helpers.paths import (
     get_project_root,
