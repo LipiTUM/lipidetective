@@ -52,7 +52,7 @@ class Trainer:
                     config["files"]["output"], f"LipiDetective_Output_{self.time_initialized}"
                 )
 
-                os.mkdir(self.output_folder)
+                os.makedirs(self.output_folder, exist_ok=True)
                 logging.info(f"Output folder has been initialized: {self.output_folder}")
 
                 # Writes the config file into the output folder so one can look at the exact parameters for each run
