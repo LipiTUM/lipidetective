@@ -2,7 +2,12 @@ import logging
 
 import ray
 
-from lipidetective.helpers.utils import is_main_process, parse_config, set_seeds
+from lipidetective.helpers.utils import (
+    is_main_process,
+    parse_config,
+    resolve_config_paths,
+    set_seeds,
+)
 from lipidetective.workflow.trainer import Trainer
 
 
@@ -21,8 +26,9 @@ def main():
     # Set seeds for deterministic behavior
     set_seeds()
 
-    # Parse yaml config file
+    # Parse yaml config file and resolve paths
     config, args = parse_config()
+    config = resolve_config_paths(config)
 
     # Set up trainer which will perform the workflow tasks
     trainer = Trainer(config)
