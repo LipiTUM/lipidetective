@@ -10,7 +10,7 @@ import torch
 import yaml
 
 from lipidetective.helpers.paths import (
-    is_absolute_or_exists,
+    is_absolute_path,
     resolve_config_path,
     resolve_data_path,
     resolve_model_path,
@@ -44,25 +44,25 @@ def resolve_config_paths(config: dict) -> dict:
     for key in data_keys:
         if key in files and files[key]:
             path = files[key]
-            if not is_absolute_or_exists(path):
+            if not is_absolute_path(path):
                 files[key] = str(resolve_data_path(path))
 
     # Model paths
     if "saved_model" in files and files["saved_model"]:
         path = files["saved_model"]
-        if not is_absolute_or_exists(path):
+        if not is_absolute_path(path):
             files["saved_model"] = str(resolve_model_path(path))
 
     # Output paths
     if "output" in files and files["output"]:
         path = files["output"]
-        if not is_absolute_or_exists(path):
+        if not is_absolute_path(path):
             files["output"] = str(resolve_output_path(path))
 
     # Splitting instructions (config path)
     if "splitting_instructions" in files and files["splitting_instructions"]:
         path = files["splitting_instructions"]
-        if not is_absolute_or_exists(path):
+        if not is_absolute_path(path):
             files["splitting_instructions"] = str(resolve_config_path(path))
 
     return resolved

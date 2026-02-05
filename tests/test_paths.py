@@ -4,7 +4,7 @@ from pathlib import Path
 
 from lipidetective.helpers.paths import (
     get_project_root,
-    is_absolute_or_exists,
+    is_absolute_path,
     resolve_config_path,
     resolve_data_path,
     resolve_model_path,
@@ -133,20 +133,25 @@ class TestResolveConfigPath:
         assert path.parent.name == "config_templates"
 
 
-class TestIsAbsoluteOrExists:
-    """Tests for is_absolute_or_exists function."""
+class TestIsAbsolutePath:
+    """Tests for is_absolute_path function."""
 
     def test_absolute_path_returns_true(self):
         """Absolute paths should return True."""
-        assert is_absolute_or_exists("/some/absolute/path")
+        assert is_absolute_path("/some/absolute/path")
 
-    def test_existing_relative_path_returns_true(self, tmp_path, monkeypatch):
-        """Existing relative paths should return True."""
+    def test_home_path_returns_true(self):
+        """Home-relative paths (~) should return True."""
+        assert is_absolute_path("~/some/path")
+        assert is_absolute_path("~")
+
+    def test_relative_path_returns_false(self):
+        """Relative paths should return False, regardless of existence."""
+        assert not is_absolute_path("relative/path")
+        assert not is_absolute_path("file.txt")
+
+    def test_existing_relative_path_returns_false(self, tmp_path, monkeypatch):
+        """Existing relative paths should still return False (CWD-independent)."""
         monkeypatch.chdir(tmp_path)
         (tmp_path / "existing_file.txt").touch()
-        assert is_absolute_or_exists("existing_file.txt")
-
-    def test_nonexistent_relative_path_returns_false(self, tmp_path, monkeypatch):
-        """Non-existent relative paths should return False."""
-        monkeypatch.chdir(tmp_path)
-        assert not is_absolute_or_exists("nonexistent_file.txt")
+        assert not is_absolute_path("existing_file.txt")

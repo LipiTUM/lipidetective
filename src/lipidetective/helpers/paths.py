@@ -103,14 +103,18 @@ def resolve_output_path(relative_path: str | Path) -> Path:
     return (base / relative_path).resolve()
 
 
-def is_absolute_or_exists(path: str | Path) -> bool:
-    """Check if a path is absolute or exists relative to cwd.
+def is_absolute_path(path: str | Path) -> bool:
+    """Check if a path is absolute (including ~ home paths).
+
+    Use this to determine if a path should skip resolution.
+    Relative paths should always be resolved via the resolve_*_path
+    functions for consistent, CWD-independent behavior.
 
     Args:
         path: Path to check.
 
     Returns:
-        True if path is absolute or exists, False otherwise.
+        True if path is absolute, False otherwise.
     """
-    p = Path(path)
-    return p.is_absolute() or p.exists()
+    p = Path(path).expanduser()
+    return p.is_absolute()
