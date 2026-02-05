@@ -33,18 +33,21 @@ class TestGetProjectRoot:
 class TestResolveDataPath:
     """Tests for resolve_data_path function."""
 
-    def test_returns_absolute_path(self):
+    def test_returns_absolute_path(self, monkeypatch):
         """Should return an absolute path."""
+        monkeypatch.delenv("LIPIDETECTIVE_DATA_DIR", raising=False)
         path = resolve_data_path("test.hdf5")
         assert path.is_absolute()
 
-    def test_includes_data_directory(self):
+    def test_includes_data_directory(self, monkeypatch):
         """Path should include data directory."""
+        monkeypatch.delenv("LIPIDETECTIVE_DATA_DIR", raising=False)
         path = resolve_data_path("test.hdf5")
         assert "data" in str(path)
 
-    def test_preserves_subdirectories(self):
+    def test_preserves_subdirectories(self, monkeypatch):
         """Should preserve subdirectory structure."""
+        monkeypatch.delenv("LIPIDETECTIVE_DATA_DIR", raising=False)
         path = resolve_data_path("processed/train.hdf5")
         assert path.name == "train.hdf5"
         assert path.parent.name == "processed"
@@ -62,13 +65,15 @@ class TestResolveDataPath:
 class TestResolveModelPath:
     """Tests for resolve_model_path function."""
 
-    def test_returns_absolute_path(self):
+    def test_returns_absolute_path(self, monkeypatch):
         """Should return an absolute path."""
+        monkeypatch.delenv("LIPIDETECTIVE_MODELS_DIR", raising=False)
         path = resolve_model_path("model.pth")
         assert path.is_absolute()
 
-    def test_includes_models_directory(self):
+    def test_includes_models_directory(self, monkeypatch):
         """Path should include models directory."""
+        monkeypatch.delenv("LIPIDETECTIVE_MODELS_DIR", raising=False)
         path = resolve_model_path("model.pth")
         assert "models" in str(path)
 
@@ -85,13 +90,15 @@ class TestResolveModelPath:
 class TestResolveOutputPath:
     """Tests for resolve_output_path function."""
 
-    def test_returns_absolute_path(self):
+    def test_returns_absolute_path(self, monkeypatch):
         """Should return an absolute path."""
+        monkeypatch.delenv("LIPIDETECTIVE_OUTPUT_DIR", raising=False)
         path = resolve_output_path("experiment_001")
         assert path.is_absolute()
 
-    def test_includes_experiments_directory(self):
+    def test_includes_experiments_directory(self, monkeypatch):
         """Path should include experiments directory."""
+        monkeypatch.delenv("LIPIDETECTIVE_OUTPUT_DIR", raising=False)
         path = resolve_output_path("experiment_001")
         assert "experiments" in str(path)
 
