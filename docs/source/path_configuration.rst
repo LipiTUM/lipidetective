@@ -74,6 +74,7 @@ The path resolution functions can be used directly in Python:
 
     from lipidetective.helpers.paths import (
         get_project_root,
+        resolve_config_path,
         resolve_data_path,
         resolve_model_path,
         resolve_output_path,
@@ -86,3 +87,4 @@ The path resolution functions can be used directly in Python:
     data_file = resolve_data_path('processed/dataset.hdf5')
     model_file = resolve_model_path('lipidetective_model.pth')
     output_dir = resolve_output_path('experiment_001')
+    config_file = resolve_config_path('validation_splits/train_val_split.yaml')

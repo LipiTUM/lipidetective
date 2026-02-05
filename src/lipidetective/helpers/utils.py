@@ -4,7 +4,6 @@ import math
 import os
 import random
 import traceback
-from pathlib import Path
 
 import numpy as np
 import torch
@@ -12,6 +11,7 @@ import yaml
 
 from lipidetective.helpers.paths import (
     is_absolute_or_exists,
+    resolve_config_path,
     resolve_data_path,
     resolve_model_path,
     resolve_output_path,
@@ -63,10 +63,7 @@ def resolve_config_paths(config: dict) -> dict:
     if "splitting_instructions" in files and files["splitting_instructions"]:
         path = files["splitting_instructions"]
         if not is_absolute_or_exists(path):
-            # Splitting instructions are in config/validation_splits/
-            files["splitting_instructions"] = str(
-                Path(resolve_data_path("")).parent / "config" / path
-            )
+            files["splitting_instructions"] = str(resolve_config_path(path))
 
     return resolved
 

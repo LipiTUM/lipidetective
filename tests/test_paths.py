@@ -5,6 +5,7 @@ from pathlib import Path
 from lipidetective.helpers.paths import (
     get_project_root,
     is_absolute_or_exists,
+    resolve_config_path,
     resolve_data_path,
     resolve_model_path,
     resolve_output_path,
@@ -110,6 +111,26 @@ class TestResolveOutputPath:
 
         path = resolve_output_path("experiment_001")
         assert path.parent == custom_dir
+
+
+class TestResolveConfigPath:
+    """Tests for resolve_config_path function."""
+
+    def test_returns_absolute_path(self):
+        """Should return an absolute path."""
+        path = resolve_config_path("config_transformer.yaml")
+        assert path.is_absolute()
+
+    def test_includes_config_directory(self):
+        """Path should include config directory."""
+        path = resolve_config_path("config_transformer.yaml")
+        assert "config" in str(path)
+
+    def test_preserves_subdirectories(self):
+        """Should preserve subdirectory structure."""
+        path = resolve_config_path("config_templates/config_transformer.yaml")
+        assert path.name == "config_transformer.yaml"
+        assert path.parent.name == "config_templates"
 
 
 class TestIsAbsoluteOrExists:
