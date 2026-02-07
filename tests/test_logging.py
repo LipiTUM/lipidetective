@@ -1,5 +1,8 @@
 """Tests for logging module - Evaluator and CustomAccuracy classes."""
 
+import matplotlib
+matplotlib.use("Agg")  # Use non-interactive backend before importing pyplot
+
 import os
 
 import numpy as np
