@@ -20,7 +20,7 @@ sys.path.insert(0, os.path.abspath('../../src'))
 # -- Project information -----------------------------------------------------
 
 project = 'LipiDetective'
-copyright = '2022, Vivian Wuerf'
+copyright = '2026, Vivian Wuerf'
 author = 'Vivian Wuerf'
 
 # The full version, including alpha/beta/rc tags
@@ -57,8 +57,7 @@ exclude_patterns = []
 html_theme = 'sphinx_rtd_theme'
 
 html_theme_options = {
-    'collapse_navigation': False,
-    'display_version': True,
+    'collapse_navigation': False
 }
 
 # Add any paths that contain custom static files (such as style sheets) here,
