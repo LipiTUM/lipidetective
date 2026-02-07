@@ -5,7 +5,6 @@ import tempfile
 
 import pytest
 import torch
-from lipidetective.helpers.lipid_library import LipidLibrary
 from lipidetective.helpers.logging import Evaluator
 from lipidetective.models.convolutional_network import ConvolutionalNetwork
 from lipidetective.models.feedforward_network import FeedForwardNetwork
@@ -14,10 +13,9 @@ from lipidetective.workflow.lightning_module import LightningModule
 
 
 @pytest.fixture
-def evaluator():
-    """Create an Evaluator instance."""
-    lipid_lib = LipidLibrary()
-    return Evaluator(lipid_lib)
+def evaluator(lipid_library):
+    """Create an Evaluator instance using shared lipid_library fixture."""
+    return Evaluator(lipid_library)
 
 
 @pytest.fixture
