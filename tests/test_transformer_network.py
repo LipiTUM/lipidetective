@@ -1,6 +1,7 @@
 """Tests for TransformerNetwork and related classes."""
 
 import torch
+
 from lipidetective.models.transformer_network import (
     Decoder,
     Embedding,

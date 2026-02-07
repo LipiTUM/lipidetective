@@ -11,6 +11,7 @@ from matplotlib.axes import Axes
 from matplotlib.ticker import ScalarFormatter
 from pytorch_lightning.loggers.logger import Logger
 from pytorch_lightning.utilities import rank_zero_only
+from torch import Tensor
 from torchmetrics import Metric
 
 from lipidetective.helpers.lipid_library import LipidLibrary
@@ -142,6 +143,11 @@ class Evaluator:
 
 
 class CustomAccuracy(Metric):
+    correct: Tensor
+    accuracy_sum: Tensor
+    total: Tensor
+    confusion_matrix: Tensor
+
     def __init__(self, evaluator, lipid_species_names):
         super().__init__()
 
@@ -332,7 +338,7 @@ class CustomLogger(Logger):
         pass
 
     @rank_zero_only
-    def log_metrics(self, metrics, step):
+    def log_metrics(self, metrics: dict[str, float], step: int | None = None) -> None:
         # metrics is a dictionary of metric names and values
         # code to record metrics goes here
 

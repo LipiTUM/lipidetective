@@ -36,13 +36,13 @@ class LightningModule(pl.LightningModule):
             self.train_mae_hg = MeanAbsoluteError()
             self.train_mae_fa1 = MeanAbsoluteError()
             self.train_mae_fa2 = MeanAbsoluteError()
-            self.train_r2 = R2Score(num_outputs=3, multioutput="uniform_average")
+            self.train_r2 = R2Score(multioutput="uniform_average")
 
             if valset_lipids is not None:
                 self.val_mae_hg = MeanAbsoluteError()
                 self.val_mae_fa1 = MeanAbsoluteError()
                 self.val_mae_fa2 = MeanAbsoluteError()
-                self.val_r2 = R2Score(num_outputs=3, multioutput="uniform_average")
+                self.val_r2 = R2Score(multioutput="uniform_average")
 
         if trainset_lipids is not None:
             self.trainset_names = trainset_lipids

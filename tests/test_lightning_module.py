@@ -5,6 +5,7 @@ import tempfile
 
 import pytest
 import torch
+
 from lipidetective.helpers.logging import Evaluator
 from lipidetective.models.convolutional_network import ConvolutionalNetwork
 from lipidetective.models.feedforward_network import FeedForwardNetwork

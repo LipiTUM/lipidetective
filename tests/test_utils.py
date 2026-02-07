@@ -83,6 +83,7 @@ class TestSetSeeds:
     def test_set_seeds_produces_reproducible_results(self):
         """Test that set_seeds produces reproducible random numbers."""
         import torch
+
         from lipidetective.helpers.utils import set_seeds
 
         set_seeds(seed=42)
@@ -294,6 +295,7 @@ class TestSetDevice:
     def test_set_device_cpu_when_no_cuda(self, monkeypatch):
         """Should return CPU device when CUDA not available."""
         import torch
+
         from lipidetective.helpers.utils import set_device
 
         monkeypatch.setattr(torch.cuda, "is_available", lambda: False)
@@ -307,6 +309,7 @@ class TestSetDevice:
     def test_set_device_gpu_default(self, monkeypatch):
         """Should return GPU device 0 when CUDA available and no gpu_nr specified."""
         import torch
+
         from lipidetective.helpers.utils import set_device
 
         monkeypatch.setattr(torch.cuda, "is_available", lambda: True)
@@ -320,6 +323,7 @@ class TestSetDevice:
     def test_set_device_fractional_gpu(self, monkeypatch):
         """Should return 0.5 GPUs when fractional_gpu is True."""
         import torch
+
         from lipidetective.helpers.utils import set_device
 
         monkeypatch.setattr(torch.cuda, "is_available", lambda: True)
@@ -332,6 +336,7 @@ class TestSetDevice:
     def test_set_device_specific_gpu(self, monkeypatch):
         """Should return specified GPU device."""
         import torch
+
         from lipidetective.helpers.utils import set_device
 
         monkeypatch.setattr(torch.cuda, "is_available", lambda: True)

@@ -155,9 +155,9 @@ class Trainer:
 
             if self.config["model"] == "transformer":
                 custom_logger.save_lipid_wise_metrics(
-                    pl_module.train_custom_accuracy.metric.get_confusion_matrix(),
+                    pl_module.train_custom_accuracy.metric.get_confusion_matrix(),  # type: ignore[operator]
                     trainset_lipids[fold],
-                    pl_module.val_custom_accuracy.metric.get_confusion_matrix(),
+                    pl_module.val_custom_accuracy.metric.get_confusion_matrix(),  # type: ignore[operator]
                     valset_lipids[fold],
                 )
 
@@ -217,7 +217,8 @@ class Trainer:
 
         if self.config["model"] == "transformer":
             custom_logger.save_lipid_wise_metrics(
-                pl_module.train_custom_accuracy.metric.get_confusion_matrix(), dataset_lipids
+                pl_module.train_custom_accuracy.metric.get_confusion_matrix(),  # type: ignore[operator]
+                dataset_lipids,
             )
 
         if self.config["workflow"]["save_model"]:
@@ -270,7 +271,7 @@ class Trainer:
 
         if self.config["model"] == "transformer":
             custom_logger.save_lipid_wise_metrics(
-                test_confusion_matrix=pl_module.test_custom_accuracy.metric.get_confusion_matrix(),
+                test_confusion_matrix=pl_module.test_custom_accuracy.metric.get_confusion_matrix(),  # type: ignore[operator]
                 test_lipids=dataset_lipids,
             )
 

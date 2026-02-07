@@ -1,6 +1,7 @@
 """Tests for ConvolutionalNetwork class."""
 
 import torch
+
 from lipidetective.models.convolutional_network import ConvolutionalNetwork
 
 

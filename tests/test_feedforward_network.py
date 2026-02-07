@@ -1,6 +1,7 @@
 """Tests for FeedForwardNetwork class."""
 
 import torch
+
 from lipidetective.models.feedforward_network import FeedForwardNetwork
 
 
