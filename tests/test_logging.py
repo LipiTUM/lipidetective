@@ -968,8 +968,6 @@ class TestTransformTokenPredictionsToString:
         label_tokens = token_tensor[1:].numpy()
 
         # Build input array: [epoch, batch, pred_tokens..., label_tokens..., dataset_idx]
-        # output_seq_length - 1 because we skip SOS
-        _seq_len = output_seq_length - 1  # This is logger.output_seq_length
         epoch = 1
         batch = 0
         dataset_idx = 0
