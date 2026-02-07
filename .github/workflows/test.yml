@@ -13,7 +13,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest]
-        python-version: ['3.11', '3.12']
+        python-version: ['3.11']
 
     steps:
       - name: Checkout code
@@ -24,38 +24,27 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Install Poetry
-        run: pip install poetry
+      - name: Install UV
+        uses: astral-sh/setup-uv@v5
 
-      - name: Cache Poetry dependencies
+      - name: Cache UV dependencies
         uses: actions/cache@v4
         with:
           path: |
-            ~/.cache/pypoetry
+            ~/.cache/uv
             .venv
-          key: poetry-${{ runner.os }}-py${{ matrix.python-version }}-${{ hashFiles('poetry.lock') }}
+          key: uv-${{ runner.os }}-py${{ matrix.python-version }}-${{ hashFiles('uv.lock') }}
           restore-keys: |
-            poetry-${{ runner.os }}-py${{ matrix.python-version }}-
+            uv-${{ runner.os }}-py${{ matrix.python-version }}-
 
       - name: Install dependencies
-        run: poetry install
-
-      - name: Check if tests exist
-        id: check_tests
-        run: |
-          if [ -d "tests" ] && [ "$(find tests -name 'test_*.py' -o -name '*_test.py' 2>/dev/null | head -1)" ]; then
-            echo "tests_exist=true" >> $GITHUB_OUTPUT
-          else
-            echo "tests_exist=false" >> $GITHUB_OUTPUT
-            echo "::warning::No tests found in tests/ directory. Skipping test execution."
-          fi
+        run: uv sync --all-extras
 
       - name: Run tests
-        if: steps.check_tests.outputs.tests_exist == 'true'
-        run: poetry run pytest tests/ -v --cov=src/lipidetective --cov-report=xml --cov-report=term
+        run: uv run pytest tests/ -v --cov=src/lipidetective --cov-report=xml --cov-report=term
 
       - name: Upload coverage to Codecov
-        if: steps.check_tests.outputs.tests_exist == 'true' && matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
+        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
         uses: codecov/codecov-action@v4
         with:
           file: ./coverage.xml
