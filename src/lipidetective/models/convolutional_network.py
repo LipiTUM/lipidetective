@@ -50,7 +50,7 @@ class ConvolutionalNetwork(nn.Module):
 
         fc_1_size = self.calculate_fc1_size(self.input_size)
 
-        self.fc1 = nn.Linear(self.channels_2 * fc_1_size, self.lin_1)
+        self.fc1 = nn.Linear(self.channels_3 * fc_1_size, self.lin_1)
         self.fc2 = nn.Linear(self.lin_1, self.lin_2)
         self.fc3 = nn.Linear(self.lin_2, 3)
 

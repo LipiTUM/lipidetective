@@ -29,12 +29,6 @@ class TransformerNetwork(nn.Module):
             in_features=self.config["transformer"]["d_model"], out_features=out_vocab_size
         )  # tgt vocab size - 30
 
-    def init_weights(self) -> None:
-        initrange = 0.1
-        self.embedding.weight.data.uniform_(-initrange, initrange)
-        self.final_lin_layer.bias.data.zero_()
-        self.final_lin_layer.weight.data.uniform_(-initrange, initrange)
-
     def forward(self, src: Tensor, tgt: Tensor):
         src_padding_mask, tgt_padding_mask, nopeak_mask = self.generate_mask(src, tgt)
 

@@ -73,7 +73,7 @@ class LipidLibrary:
         self.bond_types_2_re = re.compile(r"(?<=_)[a-zA-Z]{1,2}[\-]{0,1}(?=[1-9]+)")
         self.functional_groups_re_1 = re.compile(r"(?<= [0-9]{2}:[0-9]{1});[a-zA-Z1-9]+(?=[_/])")
         self.functional_groups_re_1_2 = re.compile(r"(?<= [0-9]{1}:[0-9]{1});[a-zA-Z1-9]+(?=[_/])")
-        self.functional_groups_re_2 = re.compile(r";[a-zA-Z1-9]+(?=$)")
+        self.functional_groups_re_2 = re.compile(r";[a-zA-Z1-9]+(?= \[M|$)")
         self.functional_groups_re_3 = re.compile(r";[a-zA-Z1-9]+(?=[;])")
         self.functional_groups_re_4 = re.compile(r"(?<=_[0-9]{2}:[0-9]{1});[a-zA-Z1-9]+(?=[_/])")
         self.adduct_re = re.compile(r" \[M[+\-]\S+][+\-](?=<EOS>)")
@@ -170,10 +170,9 @@ class LipidLibrary:
     def get_lipid_species_components(self, lipid_species: str):
         lipid_class_match = self.lipid_class_re.match(lipid_species)
         if lipid_class_match:
-            lipid_class_str = lipid_class_match.group()
+            lipid_class = lipid_class_match.group().strip()
         else:
-            lipid_class_str = ""
-        lipid_class = lipid_class_str[0] if lipid_class_str else lipid_class_str
+            lipid_class = ""
         fatty_acids = self.fatty_acids_re.findall(lipid_species)
         bond_types = self.bond_types_re.findall(lipid_species)
         bond_types_2 = self.bond_types_2_re.findall(lipid_species)

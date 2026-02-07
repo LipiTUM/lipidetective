@@ -38,7 +38,7 @@ class PredictionDataset(Dataset):
         elif self.file_path.endswith(".json"):
             return self.process_json()
         else:
-            return None
+            raise ValueError(f"Unsupported format. Expected .mzML or .json, got: {self.file_path}")
 
     def process_mzml(self):
         spectra = list(mzml.read(self.file_path))
