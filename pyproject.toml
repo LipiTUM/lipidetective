@@ -32,7 +32,6 @@ dependencies = [
     "pyteomics==4.6.3",
     "lxml==5.1.0",
     "holoviews>=1.18.1",
-    "types-seaborn>=0.13.2.20251221",
 ]
 
 [dependency-groups]
@@ -43,11 +42,12 @@ dev = [
     "mypy>=1.7.0",
     "types-PyYAML>=6.0.0",
     "pandas-stubs>=2.3.3.260113",
+    "types-seaborn>=0.13.2.20251221",
 ]
 docs = [
     "sphinx>=7.2.6",
     "sphinx-togglebutton>=0.3.2",
-    "sphinx_rtd_theme>=2.0.0",
+    "sphinx-rtd-theme>=3.1.0",
 ]
 
 [project.scripts]

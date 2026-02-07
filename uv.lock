@@ -1076,7 +1076,6 @@ dependencies = [
     { name = "seaborn" },
     { name = "torch" },
     { name = "torchmetrics" },
-    { name = "types-seaborn" },
     { name = "umap-learn" },
     { name = "wandb" },
 ]
@@ -1089,6 +1088,7 @@ dev = [
     { name = "pytest-cov" },
     { name = "ruff" },
     { name = "types-pyyaml" },
+    { name = "types-seaborn" },
 ]
 docs = [
     { name = "sphinx", version = "9.0.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
@@ -1114,7 +1114,6 @@ requires-dist = [
     { name = "seaborn", specifier = ">=0.13.2" },
     { name = "torch", specifier = ">=2.3.0" },
     { name = "torchmetrics", specifier = ">=1.2.1" },
-    { name = "types-seaborn", specifier = ">=0.13.2.20251221" },
     { name = "umap-learn", specifier = ">=0.5.7" },
     { name = "wandb", specifier = ">=0.18" },
 ]
@@ -1127,10 +1126,11 @@ dev = [
     { name = "pytest-cov", specifier = ">=4.1.0" },
     { name = "ruff", specifier = ">=0.1.0" },
     { name = "types-pyyaml", specifier = ">=6.0.0" },
+    { name = "types-seaborn", specifier = ">=0.13.2.20251221" },
 ]
 docs = [
     { name = "sphinx", specifier = ">=7.2.6" },
-    { name = "sphinx-rtd-theme", specifier = ">=2.0.0" },
+    { name = "sphinx-rtd-theme", specifier = ">=3.1.0" },
     { name = "sphinx-togglebutton", specifier = ">=0.3.2" },
 ]
 
