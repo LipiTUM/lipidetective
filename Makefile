@@ -26,48 +26,48 @@ help:
 # Installation
 install:
 	@echo "Installing production dependencies..."
-	poetry install --without dev
+	uv sync --no-dev
 
 install-dev:
 	@echo "Installing development dependencies..."
-	poetry install
+	uv sync --all-extras
 
 # Linting (auto-fix)
 lint:
 	@echo "Formatting code with ruff..."
-	poetry run ruff format src/ tests/
+	uv run ruff format src/ tests/
 	@echo ""
 	@echo "Running ruff linter with auto-fix..."
-	poetry run ruff check --fix src/ tests/
+	uv run ruff check --fix src/ tests/
 
 # Type checking
 type-check:
 	@echo "Running mypy type checking..."
-	poetry run mypy src/
+	uv run mypy src/
 
 # Testing
 test:
 	@echo "Running tests with coverage..."
-	poetry run pytest tests/ -v
+	uv run pytest tests/ -v
 
 test-fast:
 	@echo "Running tests without coverage..."
-	poetry run pytest tests/ -v --no-cov -m "not slow"
+	uv run pytest tests/ -v --no-cov -m "not slow"
 
 test-slow:
 	@echo "Running slow tests..."
-	poetry run pytest tests/ -v -m "slow"
+	uv run pytest tests/ -v -m "slow"
 
 # Documentation
 docs:
 	@echo "Building documentation..."
-	cd docs && poetry run sphinx-build -W -b html source build/html
+	cd docs && uv run sphinx-build -W -b html source build/html
 	@echo ""
 	@echo "Documentation built! Open docs/build/html/index.html"
 
 docs-serve:
 	@echo "Building and serving documentation..."
-	cd docs && poetry run sphinx-build -W -b html source build/html
+	cd docs && uv run sphinx-build -W -b html source build/html
 	@echo ""
 	@echo "Serving documentation at http://localhost:8000"
 	cd docs/build/html && python -m http.server 8000

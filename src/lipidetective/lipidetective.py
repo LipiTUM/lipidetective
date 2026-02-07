@@ -35,7 +35,7 @@ def main():
 
     # 2. EXECUTE WORKFLOWS
     if config["model"] == "random_forest":
-        logging.info(f'Random forest run of {config["random_forest"]["type"]} started.')
+        logging.info(f"Random forest run of {config['random_forest']['type']} started.")
 
         trainer.run_random_forest()
 

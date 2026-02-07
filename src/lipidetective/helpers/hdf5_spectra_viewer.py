@@ -52,7 +52,7 @@ class SpectraViewer:
         )
 
         for idx, selector in enumerate(self.selection_column):
-            selector.name = f"selector_{idx+1}"
+            selector.name = f"selector_{idx + 1}"
             selector.param.watch(self.change_group_selection, "value")
 
     def created(self, session_context):

@@ -360,7 +360,7 @@ class PositionalEncoding(nn.Module):
     def forward(self, x):
         # add constant to embedding
         seq_len = x.size(1)
-        x = x + Variable(self.pe[:, :seq_len], requires_grad=False)  # .cuda()
+        x = x + Variable(self.pe[:, :seq_len], requires_grad=False)  # type: ignore[index]
         return x
 
 

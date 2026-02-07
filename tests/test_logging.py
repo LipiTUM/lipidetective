@@ -9,6 +9,7 @@ import os
 import numpy as np
 import pytest
 import torch
+
 from lipidetective.helpers.logging import CustomAccuracy, CustomLogger, Evaluator
 
 
@@ -137,17 +138,21 @@ class TestCustomAccuracyCompute:
 
     def test_compute_returns_accuracy_tensor(self, lipid_library):
         """Compute should return tensor with accuracy and mean accuracy."""
+        import warnings
+
         evaluator = Evaluator(lipid_library)
         lipid_names = ["PC 16:0_18:1", "noise_spectrum"]
 
         metric = CustomAccuracy(evaluator, lipid_names)
 
-        # Manually set some state values
+        # Manually set some state values (bypassing update() for isolated testing)
         metric.correct = torch.tensor(5)
         metric.total = torch.tensor(10)
         metric.accuracy_sum = torch.tensor(7.5)
 
-        result = metric.compute()
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", UserWarning)
+            result = metric.compute()
 
         assert result.shape == (2,)
         assert result[0].item() == pytest.approx(0.5)  # 5/10

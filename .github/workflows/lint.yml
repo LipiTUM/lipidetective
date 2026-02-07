@@ -19,30 +19,30 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install Poetry
-        run: pip install poetry
+      - name: Install UV
+        uses: astral-sh/setup-uv@v5
 
-      - name: Cache Poetry dependencies
+      - name: Cache UV dependencies
         uses: actions/cache@v4
         with:
           path: |
-            ~/.cache/pypoetry
+            ~/.cache/uv
             .venv
-          key: poetry-${{ runner.os }}-${{ hashFiles('poetry.lock') }}
+          key: uv-${{ runner.os }}-${{ hashFiles('uv.lock') }}
           restore-keys: |
-            poetry-${{ runner.os }}-
+            uv-${{ runner.os }}-
 
       - name: Install dependencies
-        run: poetry install --only dev
+        run: uv sync --group dev
 
       - name: Run Ruff format check
-        run: poetry run ruff format --check src/ tests/
+        run: uv run ruff format --check src/ tests/
 
       - name: Run Ruff linter
-        run: poetry run ruff check src/ tests/
+        run: uv run ruff check src/ tests/
 
       - name: Run Mypy type checking
-        run: poetry run mypy src/
+        run: uv run mypy src/
         continue-on-error: true
         # continue-on-error allows CI to pass while type coverage improves
         # Remove once type hints are added throughout the codebase
