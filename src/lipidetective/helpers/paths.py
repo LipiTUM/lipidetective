@@ -13,16 +13,23 @@ from pathlib import Path
 def get_project_root() -> Path:
     """Get the project root directory.
 
-    Returns the directory containing pyproject.toml by navigating up
-    from this file's location (src/lipidetective/helpers/paths.py).
+    Searches upward from this file's location for a directory containing
+    pyproject.toml. Raises FileNotFoundError if not found (e.g. in an
+    installed wheel layout), prompting the user to set environment
+    variables instead.
 
     Returns:
         Path to the project root directory.
     """
-    current = Path(__file__).resolve()
-    # Navigate up from src/lipidetective/helpers/paths.py
-    root = current.parent.parent.parent.parent
-    return root
+    current = Path(__file__).resolve().parent
+    for parent in [current, *current.parents]:
+        if (parent / "pyproject.toml").exists():
+            return parent
+    raise FileNotFoundError(
+        "Could not find project root (no pyproject.toml found). "
+        "Set LIPIDETECTIVE_DATA_DIR and LIPIDETECTIVE_MODELS_DIR "
+        "environment variables to specify paths explicitly."
+    )
 
 
 def resolve_data_path(relative_path: str | Path) -> Path:
