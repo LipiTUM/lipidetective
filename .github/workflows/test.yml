@@ -38,7 +38,7 @@ jobs:
             uv-${{ runner.os }}-py${{ matrix.python-version }}-
 
       - name: Install dependencies
-        run: uv sync --all-extras
+        run: uv sync --group dev
 
       - name: Run tests
         run: uv run pytest tests/ -v --cov=src/lipidetective --cov-report=xml --cov-report=term
