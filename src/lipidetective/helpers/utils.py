@@ -133,7 +133,10 @@ def is_main_process() -> bool:
 
 def truncate(values: np.ndarray, decimal_places: int = 0) -> list[float]:
     factor = 10**decimal_places
-    return [(math.floor(x * factor) / factor) for x in values]
+    # Guard against float representation error where x * factor lands just
+    # below an integer (e.g. 200.0 * 10 → 1999.9999999999998).
+    eps = 1e-9
+    return [(math.floor(x * factor + eps) / factor) for x in values]
 
 
 def is_lipid_class_with_slash(lipid_name: str) -> bool:
