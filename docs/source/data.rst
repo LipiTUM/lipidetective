@@ -10,13 +10,55 @@ Supported Formats
 HDF5 (Training & Evaluation)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-HDF5 files store pre-processed tandem mass spectra with associated lipid
-labels. Each spectrum is stored as a group containing:
+HDF5 files store pre-processed tandem mass spectra under a single group
+``/all_datasets/``. Each spectrum is stored as a **dataset** (not a group)
+with a 2×N array where row 0 is m/z values and row 1 is intensities.
 
-- ``mz`` — m/z values (float array)
-- ``intensity`` — intensity values (float array)
-- ``precursor`` — precursor m/z (float)
-- ``label`` — lipid species name (string)
+Metadata is stored as **HDF5 attributes** on each dataset:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 25 15 60
+
+   * - Attribute
+     - Type
+     - Description
+   * - ``lipid_species``
+     - string
+     - Lipid species name (empty string for unlabeled data)
+   * - ``adduct``
+     - string
+     - Adduct type (e.g. ``[M+H]+``)
+   * - ``precursor``
+     - float
+     - Precursor m/z value
+   * - ``polarity``
+     - string
+     - ``"pos"`` or ``"neg"``
+   * - ``scan_index``
+     - int
+     - Scan index from the source file
+   * - ``level``
+     - int
+     - MS level (2 for MS/MS)
+   * - ``source``
+     - string
+     - Source file name
+
+Example HDF5 structure:
+
+.. code-block:: text
+
+   /all_datasets/
+   ├── "PC 34:1 | pos | nist | 042"    # dataset: float64 array (2, N)
+   │   ├── attrs["lipid_species"] = "PC 34:1"
+   │   ├── attrs["adduct"] = "[M+H]+"
+   │   ├── attrs["precursor"] = 760.585
+   │   ├── attrs["polarity"] = "pos"
+   │   └── ...
+   ├── "PE 36:2 | neg | nist | 117"
+   │   └── ...
+   └── ...
 
 Use ``H5Dataset`` to load HDF5 files in your training pipeline:
 

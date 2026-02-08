@@ -2,42 +2,85 @@ Output & Metrics
 ================
 
 LipiDetective writes all results to the directory specified by ``files.output``
-(resolved relative to ``experiments/`` by default).
+(resolved relative to ``experiments/`` by default). A ``config.yaml`` copy is
+saved at the root of every experiment.
 
-Output Directory Structure
---------------------------
+Training Output
+---------------
 
-A typical experiment produces:
+Training creates logger subdirectories inside the output folder:
 
 .. code-block:: text
 
    experiments/<output>/
-   ├── predictions.csv                         # Prediction results
-   ├── plot_loss_accuracy_training_trial_0.png  # Training curves
-   ├── plot_loss_accuracy_val_trial_0.png       # Validation curves
-   ├── confusion_matrix.png                     # Class-level confusion matrix
-   ├── metrics.csv                              # Per-epoch training metrics
-   └── config.yaml                              # Copy of the run config
+   ├── config.yaml
+   ├── custom_logger/
+   │   ├── train_metrics.csv                        # Per-epoch loss & accuracy
+   │   ├── train_predictions.csv                    # Per-batch predictions vs labels
+   │   ├── validation_metrics.csv                   # Per-epoch validation metrics
+   │   ├── validation_predictions.csv               # Validation predictions vs labels
+   │   ├── plot_loss_accuracy_training.png           # Training loss & accuracy curves
+   │   ├── plot_loss_training.png                    # Training loss curve
+   │   ├── plot_loss_accuracy_validation.png         # Validation loss & accuracy curves
+   │   ├── plot_loss_validation.png                  # Validation loss curve
+   │   ├── confusion_matrix_train.csv                # Training confusion matrix
+   │   ├── confusion_matrix_val.csv                  # Validation confusion matrix
+   │   ├── confusion_matrix_heatmap_train.png        # Training confusion matrix heatmap
+   │   ├── confusion_matrix_heatmap_validation.png   # Validation confusion matrix heatmap
+   │   ├── train_lipid_metrics.csv                   # Per-lipid precision/recall/F1
+   │   └── val_lipid_metrics.csv
+   └── csv_logger/                                   # PyTorch Lightning CSVLogger output
 
-Training Metrics
-----------------
+With **k-fold cross-validation** (``training.k > 1``), each fold gets its own
+subdirectory and plot filenames include the fold identifier:
 
-During training, the following metrics are logged per epoch:
+.. code-block:: text
+
+   custom_logger/
+   ├── fold_0/
+   │   ├── train_metrics.csv
+   │   ├── plot_loss_accuracy_training_fold_0.png
+   │   ├── confusion_matrix_heatmap_train.png
+   │   └── ...
+   ├── fold_1/
+   │   └── ...
+   └── ...
+
+Metrics logged per epoch:
 
 - **Loss** — Cross-entropy loss (training and validation)
 - **Accuracy** — Custom lipid-aware accuracy that evaluates predicted token
   sequences against ground truth
 
-Loss and accuracy curves are saved as PNG plots for each fold/trial.
+Testing Output
+--------------
 
-Confusion Matrices
-------------------
+Testing writes to ``custom_logger/`` (no fold subdirectory):
 
-After testing, a confusion matrix shows per-lipid-class performance. This
-helps identify which lipid classes the model confuses.
+.. code-block:: text
+
+   custom_logger/
+   ├── test_metrics.csv                      # Per-step loss & accuracy
+   ├── test_predictions.csv                  # Predictions vs labels
+   ├── confusion_matrix_test.csv             # Confusion matrix
+   ├── confusion_matrix_heatmap_testing.png  # Confusion matrix heatmap
+   └── test_lipid_metrics.csv                # Per-lipid precision/recall/F1
+
+Confusion matrices show per-lipid-class performance, helping identify which
+lipid classes the model confuses. The ``test_lipid_metrics.csv`` reports
+precision, recall, and F1 per lipid species.
 
 Prediction Output
 -----------------
+
+Prediction writes directly to the output folder root (not inside a logger
+subdirectory):
+
+.. code-block:: text
+
+   experiments/<output>/
+   ├── config.yaml
+   └── predictions.csv
 
 The ``predictions.csv`` file contains one row per identified spectrum with the
 following columns:
@@ -60,6 +103,20 @@ When ``predict.output`` is set to ``"top3"``, an additional
 - **prediction_1**, **confidence_1** — Top prediction and its confidence
 - **prediction_2**, **confidence_2** — Second prediction
 - **prediction_3**, **confidence_3** — Third prediction
+
+Tuning Output
+-------------
+
+Hyperparameter tuning (Ray Tune) writes trial results to the output folder.
+Each trial generates training and validation plots with a trial identifier:
+
+.. code-block:: text
+
+   experiments/<output>/
+   ├── plot_loss_accuracy_training_trial_0.png
+   ├── plot_loss_accuracy_validation_trial_0.png
+   ├── tune_result.txt
+   └── ...
 
 WandB Integration
 -----------------
