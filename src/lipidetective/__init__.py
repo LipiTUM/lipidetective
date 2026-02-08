@@ -27,7 +27,6 @@ from lipidetective.helpers.paths import (
 from lipidetective.helpers.utils import (
     read_yaml,
     resolve_config_paths,
-    set_device,
     set_seeds,
     write_yaml,
 )
@@ -64,7 +63,6 @@ __all__ = [
     "read_yaml",
     "write_yaml",
     "resolve_config_paths",
-    "set_device",
     "set_seeds",
     "get_project_root",
     "resolve_data_path",

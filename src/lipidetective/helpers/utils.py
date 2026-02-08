@@ -104,26 +104,6 @@ def write_yaml(file_to_open: str, dict_to_write: dict[str, Any]) -> None:
         traceback.print_exc()
 
 
-def set_device(config: dict[str, Any]) -> tuple[torch.device, int | float]:
-    if torch.cuda.is_available():
-        if config["cuda"]["gpu_nr"] is None:
-            device = torch.device("cuda:{GPU}".format(GPU="0"))
-        else:
-            device = torch.device("cuda:{GPU}".format(GPU=config["gpu_nr"]))
-
-        if config["tune"]["fractional_gpu"]:
-            nr_gpus = 0.5
-        else:
-            nr_gpus = 1
-        logging.info("Running LipiDetective on the GPU")
-
-    else:
-        device = torch.device("cpu")
-        nr_gpus = 0
-        logging.info("Running LipiDetective on the CPU")
-
-    return device, nr_gpus
-
 
 def set_seeds(seed: int = 42) -> None:
     torch.set_float32_matmul_precision("high")

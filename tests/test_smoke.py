@@ -85,7 +85,6 @@ class TestPublicAPIExports:
             LipidLibrary,
             read_yaml,
             resolve_config_paths,
-            set_device,
             set_seeds,
             write_yaml,
         )
@@ -94,7 +93,6 @@ class TestPublicAPIExports:
         assert callable(read_yaml)
         assert callable(write_yaml)
         assert callable(resolve_config_paths)
-        assert callable(set_device)
         assert callable(set_seeds)
 
     def test_path_utilities_importable_from_top_level(self):

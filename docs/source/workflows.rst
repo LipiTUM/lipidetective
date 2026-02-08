@@ -13,6 +13,12 @@ multiple flags are set to ``True``, the first match wins in this order:
 The ``validate`` flag is not a standalone workflow — it controls whether
 training includes validation (k-fold or custom split).
 
+.. note::
+
+   When ``model`` is set to ``random_forest``, the workflow flags are ignored
+   entirely. The random forest runs its own self-contained pipeline via
+   ``run_random_forest()``.
+
 .. code-block:: yaml
 
    workflow:

@@ -54,8 +54,6 @@ Helpers
 
 .. autofunction:: lipidetective.resolve_config_paths
 
-.. autofunction:: lipidetective.set_device
-
 .. autofunction:: lipidetective.set_seeds
 
 .. autofunction:: lipidetective.get_project_root

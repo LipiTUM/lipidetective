@@ -180,6 +180,7 @@ class Trainer:
             if self.config["workflow"]["save_model"]:
                 if version != ".":
                     output_folder = os.path.join(self.output_folder, version)
+                    os.makedirs(output_folder, exist_ok=True)
                     pl_module.save_model(output_folder)
                 else:
                     pl_module.save_model(self.output_folder)
