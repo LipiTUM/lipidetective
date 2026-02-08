@@ -41,12 +41,13 @@ See :doc:`configuration` for all available options.
 4. View the Results
 --------------------
 
-Results are written to the output directory you specified. The prediction CSV
-contains identified lipid species with confidence scores:
+Results are written to a timestamped subdirectory inside the output path you
+specified. The prediction CSV contains identified lipid species with confidence
+scores:
 
 .. code-block:: text
 
-   experiments/my_first_run/
+   experiments/my_first_run/LipiDetective_Output_2026_02_08_14_30_00/
    ├── predictions.csv       # Lipid identifications
    └── ...
 

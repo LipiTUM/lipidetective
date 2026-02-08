@@ -1,9 +1,10 @@
 Output & Metrics
 ================
 
-LipiDetective writes all results to the directory specified by ``files.output``
-(resolved relative to ``experiments/`` by default). A ``config.yaml`` copy is
-saved at the root of every experiment.
+LipiDetective writes all results to a timestamped subdirectory created inside
+``files.output`` (resolved relative to ``experiments/`` by default). The folder
+is named ``LipiDetective_Output_<YYYY_MM_DD_HH_MM_SS>``, and a ``config.yaml``
+copy is saved at its root.
 
 Training Output
 ---------------
@@ -12,7 +13,7 @@ Training creates logger subdirectories inside the output folder:
 
 .. code-block:: text
 
-   experiments/<output>/
+   experiments/<output>/LipiDetective_Output_<timestamp>/
    ├── config.yaml
    ├── custom_logger/
    │   ├── train_metrics.csv                        # Per-epoch loss & accuracy
@@ -78,7 +79,7 @@ subdirectory):
 
 .. code-block:: text
 
-   experiments/<output>/
+   experiments/<output>/LipiDetective_Output_<timestamp>/
    ├── config.yaml
    └── predictions.csv
 
@@ -112,7 +113,7 @@ Each trial generates training and validation plots with a trial identifier:
 
 .. code-block:: text
 
-   experiments/<output>/
+   experiments/<output>/LipiDetective_Output_<timestamp>/
    ├── plot_loss_accuracy_training_trial_0.png
    ├── plot_loss_accuracy_validation_trial_0.png
    ├── tune_result.txt
