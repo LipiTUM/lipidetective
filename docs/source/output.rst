@@ -39,19 +39,27 @@ helps identify which lipid classes the model confuses.
 Prediction Output
 -----------------
 
-The prediction CSV contains one row per identified spectrum:
+The ``predictions.csv`` file contains one row per identified spectrum with the
+following columns:
 
 - **file** — Source mzML file name
-- **scan** — Scan number within the file
-- **precursor_mz** — Precursor m/z value
+- **polarity** — Ion polarity of the spectrum
+- **spectrum_index** — Index of the spectrum within the file
+- **precursor** — Precursor m/z value
 - **prediction** — Predicted lipid nomenclature
 - **confidence** — Model confidence score (0–1)
 
 Spectra below the ``predict.confidence_threshold`` are omitted by default
 (set ``predict.keep_empty: True`` to include them).
 
-When ``predict.output`` is set to ``"top3"``, the three most likely
-predictions are reported per spectrum.
+When ``predict.output`` is set to ``"top3"``, an additional
+``top3_predictions.csv`` is written with columns:
+
+- **file** — Source mzML file name
+- **spectrum_index** — Index of the spectrum within the file
+- **prediction_1**, **confidence_1** — Top prediction and its confidence
+- **prediction_2**, **confidence_2** — Second prediction
+- **prediction_3**, **confidence_3** — Third prediction
 
 WandB Integration
 -----------------

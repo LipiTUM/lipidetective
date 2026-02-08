@@ -155,10 +155,10 @@ Workflow
      - Run prediction on mzML input
    * - ``save_model``
      - ``False``
-     - Save model weights after training
+     - Save model weights to the output directory after training
    * - ``load_model``
      - ``True``
-     - Load pre-trained model weights
+     - Load pre-trained model weights from ``files.saved_model``
    * - ``log_every_n_steps``
      - ``10``
      - PyTorch Lightning logging frequency

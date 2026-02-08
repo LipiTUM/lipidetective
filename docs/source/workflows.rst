@@ -29,8 +29,9 @@ To use a **custom validation split** instead of k-fold, provide a
 ``files.splitting_instructions`` YAML file that defines the train/validation
 partition.
 
-After training, set ``workflow.save_model: True`` to save the model weights to
-``files.saved_model``.
+After training, set ``workflow.save_model: True`` to save the model weights as
+``lipidetective_model.pth`` inside the experiment output directory
+(``files.output``).
 
 Validation
 ----------
