@@ -37,12 +37,12 @@ subdirectory and plot filenames include the fold identifier:
 .. code-block:: text
 
    custom_logger/
-   ├── fold_0/
+   ├── fold_1/
    │   ├── train_metrics.csv
-   │   ├── plot_loss_accuracy_training_fold_0.png
+   │   ├── plot_loss_accuracy_training_fold_1.png
    │   ├── confusion_matrix_heatmap_train.png
    │   └── ...
-   ├── fold_1/
+   ├── fold_2/
    │   └── ...
    └── ...
 

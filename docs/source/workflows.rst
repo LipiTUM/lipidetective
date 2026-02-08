@@ -2,7 +2,16 @@ Workflows
 =========
 
 LipiDetective supports five workflows, all controlled via the ``workflow``
-section of the YAML config. Multiple workflows can be enabled in a single run.
+section of the YAML config. **Only one workflow runs per invocation.** If
+multiple flags are set to ``True``, the first match wins in this order:
+
+1. ``tune``
+2. ``train`` (with or without ``validate``)
+3. ``test``
+4. ``predict``
+
+The ``validate`` flag is not a standalone workflow — it controls whether
+training includes validation (k-fold or custom split).
 
 .. code-block:: yaml
 
@@ -29,9 +38,13 @@ To use a **custom validation split** instead of k-fold, provide a
 ``files.splitting_instructions`` YAML file that defines the train/validation
 partition.
 
-After training, set ``workflow.save_model: True`` to save the model weights as
-``lipidetective_model.pth`` inside the experiment output directory
-(``files.output``).
+After training, set ``workflow.save_model: True`` to save model weights.
+The save location depends on the training mode:
+
+- **Single-split training** (no validation or custom split):
+  ``<files.output>/lipidetective_model.pth``
+- **K-fold cross-validation**: one model per fold, e.g.
+  ``<files.output>/fold_1/lipidetective_model.pth``
 
 Validation
 ----------
