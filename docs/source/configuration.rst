@@ -73,6 +73,20 @@ default base directories:
 
 Absolute paths are used as-is.
 
+Validation Split Precedence
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+When training with validation (``workflow.validate: True``), the data split
+strategy is determined by which fields are set, checked in this order:
+
+1. **``val_input``** — If set, training and validation use separate HDF5 files.
+   Both ``splitting_instructions`` and k-fold splitting are ignored.
+2. **``splitting_instructions``** — If set (and ``val_input`` is empty), the
+   referenced YAML file defines which lipid species go into the validation set.
+   Data is read from ``train_input`` only.
+3. **K-fold** (default) — If neither is set, ``train_input`` is split into
+   ``training.k`` folds by lipid species for cross-validation.
+
 Environment Variable Overrides
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -143,7 +157,7 @@ Workflow
      - Train the model
    * - ``validate``
      - ``False``
-     - Run validation after training
+     - Enable validation during training (requires ``train: True``)
    * - ``test``
      - ``False``
      - Evaluate on the test set
