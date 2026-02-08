@@ -112,7 +112,10 @@ class LightningModule(pl.LightningModule):
         return {"optimizer": optimizer, "lr_scheduler": scheduler}
 
     def training_step(self, batch: dict[str, Any], batch_idx: int) -> torch.Tensor:
-        features, labels, lipid_info, dataset_path = batch.values()
+        features = batch["features"]
+        labels = batch["label"]
+        lipid_info = batch["info"]
+        dataset_path = batch["dataset_path"]
 
         if isinstance(self.model, TransformerNetwork):
             tgt_input = labels[:, :-1]
@@ -234,7 +237,10 @@ class LightningModule(pl.LightningModule):
         return loss
 
     def validation_step(self, batch: dict[str, Any], batch_idx: int) -> torch.Tensor:
-        features, labels, lipid_info, dataset_path = batch.values()
+        features = batch["features"]
+        labels = batch["label"]
+        lipid_info = batch["info"]
+        dataset_path = batch["dataset_path"]
 
         if isinstance(self.model, TransformerNetwork):
             tgt_input = labels[:, :-1]
@@ -350,7 +356,10 @@ class LightningModule(pl.LightningModule):
         return loss
 
     def test_step(self, batch: dict[str, Any], batch_idx: int) -> torch.Tensor:
-        features, labels, lipid_info, dataset_path = batch.values()
+        features = batch["features"]
+        labels = batch["label"]
+        lipid_info = batch["info"]
+        dataset_path = batch["dataset_path"]
 
         if isinstance(self.model, TransformerNetwork):
             labels_temp = labels[:, 1:]
@@ -393,7 +402,8 @@ class LightningModule(pl.LightningModule):
         return loss
 
     def predict_step(self, batch: dict[str, Any], batch_idx: int) -> None:
-        features, spectrum_info = batch.values()
+        features = batch["features"]
+        spectrum_info = batch["info"]
 
         if isinstance(self.model, TransformerNetwork):
             probabilities, tokens = self.model.predict_top_3(features)
