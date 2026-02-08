@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import logging
 import os
+import pathlib
 from typing import Any
 
 import h5py
@@ -18,15 +19,15 @@ from lipidetective.helpers.utils import read_yaml
 class RandomForest:
     def __init__(self, config: dict[str, Any]) -> None:
         self.config: dict[str, Any] = config
-        current_working_dir = os.getcwd()
+        package_dir = pathlib.Path(__file__).resolve().parent.parent
         self.lipid_species_reference = read_yaml(
-            os.path.join(current_working_dir, "lipid_info/molecular_lipid_species.yaml")
+            os.path.join(package_dir, "lipid_info/molecular_lipid_species.yaml")
         )
         self.headgroup_reference = read_yaml(
-            os.path.join(current_working_dir, "lipid_info/headgroups.yaml")
+            os.path.join(package_dir, "lipid_info/headgroups.yaml")
         )
         self.fatty_acid_reference = read_yaml(
-            os.path.join(current_working_dir, "lipid_info/sidechains.yaml")
+            os.path.join(package_dir, "lipid_info/sidechains.yaml")
         )
 
         self.lipid_species = list(self.lipid_species_reference.keys())
