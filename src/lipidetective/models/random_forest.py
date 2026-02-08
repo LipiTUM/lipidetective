@@ -287,8 +287,8 @@ class RandomForest:
 
         return prediction_statistics
 
-    def check_classification_accuracy(self, prediction: Any, label: Any) -> bool:
-        return prediction == label  # type: ignore[no-any-return]
+    def check_classification_accuracy(self, prediction: object, label: object) -> bool:
+        return prediction == label
 
     def check_regression_accuracy(self, prediction: Any, label: Any) -> bool:
         checks: list[bool] = []

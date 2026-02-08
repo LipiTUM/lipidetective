@@ -99,9 +99,14 @@ class LightningModule(pl.LightningModule):
             self.test_predictions = CatMetric()
 
     def _get_custom_logger(self) -> Any:
-        """Return the custom logger if active, else None."""
-        if self.logger is not None and self.logger.name == "custom_logger":
-            return self.logger
+        """Return the custom logger if active, else None.
+
+        Handles both single-logger and multi-logger (LoggerCollection) cases
+        by iterating self.loggers rather than checking only self.logger.
+        """
+        for logger in self.loggers:
+            if logger.name == "custom_logger":
+                return logger
         return None
 
     def configure_optimizers(self) -> Any:
@@ -358,7 +363,7 @@ class LightningModule(pl.LightningModule):
     def test_step(self, batch: dict[str, Any], batch_idx: int) -> torch.Tensor:
         features = batch["features"]
         labels = batch["label"]
-        lipid_info = batch["info"]
+        _lipid_info = batch["info"]
         dataset_path = batch["dataset_path"]
 
         if isinstance(self.model, TransformerNetwork):

@@ -572,16 +572,18 @@ class CustomLogger(Logger):
 
     def save_lipid_wise_metrics(
         self,
-        train_confusion_matrix: NDArray[Any] | None = None,
+        train_confusion_matrix: Tensor | None = None,
         train_lipids: list[str] | None = None,
-        val_confusion_matrix: NDArray[Any] | None = None,
+        val_confusion_matrix: Tensor | None = None,
         val_lipids: list[str] | None = None,
-        test_confusion_matrix: NDArray[Any] | None = None,
+        test_confusion_matrix: Tensor | None = None,
         test_lipids: list[str] | None = None,
     ) -> None:
         if train_confusion_matrix is not None and train_lipids is not None:
             confusion_matrix_train_df = pd.DataFrame(
-                train_confusion_matrix, columns=train_lipids, index=train_lipids + ["Other"]
+                train_confusion_matrix.detach().cpu().numpy(),
+                columns=train_lipids,
+                index=train_lipids + ["Other"],
             )
             confusion_matrix_train_df.to_csv(
                 os.path.join(self.save_path, "confusion_matrix_train.csv")
@@ -595,7 +597,9 @@ class CustomLogger(Logger):
 
         if val_confusion_matrix is not None and val_lipids is not None:
             confusion_matrix_val_df = pd.DataFrame(
-                val_confusion_matrix, columns=val_lipids, index=val_lipids + ["Other"]
+                val_confusion_matrix.detach().cpu().numpy(),
+                columns=val_lipids,
+                index=val_lipids + ["Other"],
             )
             confusion_matrix_val_df.to_csv(os.path.join(self.save_path, "confusion_matrix_val.csv"))
 
@@ -606,7 +610,9 @@ class CustomLogger(Logger):
 
         if test_confusion_matrix is not None and test_lipids is not None:
             confusion_matrix_test_df = pd.DataFrame(
-                test_confusion_matrix, columns=test_lipids, index=test_lipids + ["Other"]
+                test_confusion_matrix.detach().cpu().numpy(),
+                columns=test_lipids,
+                index=test_lipids + ["Other"],
             )
             confusion_matrix_test_df.to_csv(
                 os.path.join(self.save_path, "confusion_matrix_test.csv")
@@ -937,8 +943,8 @@ class PredictionLogger(Logger):
             writer = csv.writer(f)
             writer.writerows(rows)
 
-        if self.save_top3:
-            with open(self.top_3_predictions_path, "a") as f:  # type: ignore
+        if self.save_top3 and self.top_3_predictions_path is not None:
+            with open(self.top_3_predictions_path, "a") as f:
                 writer = csv.writer(f)
                 writer.writerows(rows_top3)
 

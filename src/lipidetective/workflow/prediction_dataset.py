@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 from typing import Any
 
 import numpy as np
@@ -14,7 +15,7 @@ from lipidetective.helpers.utils import truncate
 
 class PredictionDataset(Dataset[dict[str, Any]]):
     def __init__(self, file_path: str, config: dict[str, Any]) -> None:
-        self.file_name: str = file_path.split("/")[-1]
+        self.file_name: str = Path(file_path).name
         self.file_path: str = file_path
         self.config: dict[str, Any] = config
         self.file: list[dict[str, Any]] = self.process_input()
