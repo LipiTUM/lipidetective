@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 import os
+from typing import Any
 
 import pytorch_lightning as pl
 import torch
@@ -9,7 +12,7 @@ from torchmetrics.aggregation import CatMetric
 from torchmetrics.regression import MeanAbsoluteError, R2Score
 from torchmetrics.wrappers import ClasswiseWrapper
 
-from lipidetective.helpers.logging import CustomAccuracy
+from lipidetective.helpers.logging import CustomAccuracy, Evaluator
 from lipidetective.models.convolutional_network import ConvolutionalNetwork
 from lipidetective.models.feedforward_network import FeedForwardNetwork
 from lipidetective.models.transformer_network import TransformerNetwork
@@ -17,19 +20,46 @@ from lipidetective.models.transformer_network import TransformerNetwork
 
 class LightningModule(pl.LightningModule):
     def __init__(
-        self, config, evaluator, trainset_lipids=None, valset_lipids=None, testset_lipids=None
-    ):
+        self,
+        config: dict[str, Any],
+        evaluator: Evaluator,
+        trainset_lipids: list[str] | None = None,
+        valset_lipids: list[str] | None = None,
+        testset_lipids: list[str] | None = None,
+    ) -> None:
         super().__init__()
 
-        self.config = config
-        self.batch_size = self.config["training"]["batch"]
-        self.nr_epochs = self.config["training"]["epochs"] - 1
+        self.config: dict[str, Any] = config
+        self.batch_size: int = self.config["training"]["batch"]
+        self.nr_epochs: int = self.config["training"]["epochs"] - 1
 
-        self.model = self.get_neural_network()
+        self.model: nn.Module = self.get_neural_network()
 
         if self.config["workflow"]["load_model"]:
-            model_file_path = self.config["files"]["saved_model"]
+            model_file_path: str = self.config["files"]["saved_model"]
             self.model.load_state_dict(torch.load(model_file_path))
+
+        # Declare all conditionally initialized attributes with Optional types
+        self.train_mae_hg: MeanAbsoluteError | None = None
+        self.train_mae_fa1: MeanAbsoluteError | None = None
+        self.train_mae_fa2: MeanAbsoluteError | None = None
+        self.train_r2: R2Score | None = None
+        self.val_mae_hg: MeanAbsoluteError | None = None
+        self.val_mae_fa1: MeanAbsoluteError | None = None
+        self.val_mae_fa2: MeanAbsoluteError | None = None
+        self.val_r2: R2Score | None = None
+
+        self.trainset_names: list[str] | None = None
+        self.train_custom_accuracy: ClasswiseWrapper | None = None
+        self.train_predictions: CatMetric | None = None
+
+        self.valset_names: list[str] | None = None
+        self.val_custom_accuracy: ClasswiseWrapper | None = None
+        self.val_predictions: CatMetric | None = None
+
+        self.testset_names: list[str] | None = None
+        self.test_custom_accuracy: ClasswiseWrapper | None = None
+        self.test_predictions: CatMetric | None = None
 
         # Create metrics for regression models
         if not isinstance(self.model, TransformerNetwork):
@@ -68,20 +98,20 @@ class LightningModule(pl.LightningModule):
             )
             self.test_predictions = CatMetric()
 
-    def _get_custom_logger(self):
+    def _get_custom_logger(self) -> Any:
         """Return the custom logger if active, else None."""
         if self.logger is not None and self.logger.name == "custom_logger":
             return self.logger
         return None
 
-    def configure_optimizers(self):
+    def configure_optimizers(self) -> Any:
         optimizer = optim.Adam(self.model.parameters(), lr=self.config["training"]["learning_rate"])
         scheduler = optim.lr_scheduler.StepLR(
             optimizer, step_size=self.config["training"]["lr_step"], gamma=0.9
         )
         return {"optimizer": optimizer, "lr_scheduler": scheduler}
 
-    def training_step(self, batch, batch_idx):
+    def training_step(self, batch: dict[str, Any], batch_idx: int) -> torch.Tensor:
         features, labels, lipid_info, dataset_path = batch.values()
 
         if isinstance(self.model, TransformerNetwork):
@@ -93,6 +123,7 @@ class LightningModule(pl.LightningModule):
             output_tokens = torch.argmax(output, dim=2)
             is_last_epoch = self.current_epoch == self.nr_epochs
 
+            assert self.train_custom_accuracy is not None
             accuracy_dict = self.train_custom_accuracy(
                 output_tokens, tgt_expected, "transformer", is_last_epoch
             )
@@ -101,6 +132,7 @@ class LightningModule(pl.LightningModule):
                 preds_vs_labels = self.get_preds_vs_labels(
                     batch_idx, output_tokens, tgt_expected, dataset_path
                 )
+                assert self.train_predictions is not None
                 self.train_predictions(preds_vs_labels)
                 logger.log_predictions(self.train_predictions, batch_idx, "train")
 
@@ -135,12 +167,18 @@ class LightningModule(pl.LightningModule):
             output = self.model(features)
             loss = nn.functional.mse_loss(output, labels)
 
+            assert self.train_custom_accuracy is not None
+            assert self.train_mae_hg is not None
+            assert self.train_mae_fa1 is not None
+            assert self.train_mae_fa2 is not None
+
             accuracy_dict = self.train_custom_accuracy(output, lipid_info, "regression")
             self.train_mae_hg(output[:, 0], labels[:, 0])
             self.train_mae_fa1(output[:, 1], labels[:, 1])
             self.train_mae_fa2(output[:, 2], labels[:, 2])
 
             if output.size()[0] > 1:
+                assert self.train_r2 is not None
                 self.train_r2(output, labels)
                 self.log(
                     "train_r2",
@@ -189,12 +227,13 @@ class LightningModule(pl.LightningModule):
 
             if (logger := self._get_custom_logger()) is not None:
                 preds_vs_labels = self.get_preds_vs_labels(batch_idx, output, labels, dataset_path)
+                assert self.train_predictions is not None
                 self.train_predictions(preds_vs_labels)
                 logger.log_predictions(self.train_predictions, batch_idx, "train")
 
         return loss
 
-    def validation_step(self, batch, batch_idx):
+    def validation_step(self, batch: dict[str, Any], batch_idx: int) -> torch.Tensor:
         features, labels, lipid_info, dataset_path = batch.values()
 
         if isinstance(self.model, TransformerNetwork):
@@ -205,6 +244,7 @@ class LightningModule(pl.LightningModule):
             output_tokens = self.model.predict(features)
 
             is_last_epoch = self.current_epoch == self.nr_epochs
+            assert self.val_custom_accuracy is not None
             accuracy_dict = self.val_custom_accuracy(
                 output_tokens, tgt_expected, "transformer", is_last_epoch
             )
@@ -213,6 +253,7 @@ class LightningModule(pl.LightningModule):
                 preds_vs_labels = self.get_preds_vs_labels(
                     batch_idx, output_tokens, tgt_expected, dataset_path
                 )
+                assert self.val_predictions is not None
                 self.val_predictions(preds_vs_labels)
                 logger.log_predictions(self.val_predictions, batch_idx, "val")
 
@@ -246,12 +287,18 @@ class LightningModule(pl.LightningModule):
             output = self.model(features)
             loss = nn.functional.mse_loss(output, labels)
 
+            assert self.val_custom_accuracy is not None
+            assert self.val_mae_hg is not None
+            assert self.val_mae_fa1 is not None
+            assert self.val_mae_fa2 is not None
+
             accuracy_dict = self.val_custom_accuracy(output, lipid_info, "regression")
             self.val_mae_hg(output[:, 0], labels[:, 0])
             self.val_mae_fa1(output[:, 1], labels[:, 1])
             self.val_mae_fa2(output[:, 2], labels[:, 2])
 
             if output.size()[0] > 1:
+                assert self.val_r2 is not None
                 self.val_r2(output, labels)
                 self.log(
                     "val_r2", self.val_r2, on_step=True, on_epoch=True, batch_size=self.batch_size
@@ -296,12 +343,13 @@ class LightningModule(pl.LightningModule):
 
             if (logger := self._get_custom_logger()) is not None:
                 preds_vs_labels = self.get_preds_vs_labels(batch_idx, output, labels, dataset_path)
+                assert self.val_predictions is not None
                 self.val_predictions(preds_vs_labels)
                 logger.log_predictions(self.val_predictions, batch_idx, "val")
 
         return loss
 
-    def test_step(self, batch, batch_idx):
+    def test_step(self, batch: dict[str, Any], batch_idx: int) -> torch.Tensor:
         features, labels, lipid_info, dataset_path = batch.values()
 
         if isinstance(self.model, TransformerNetwork):
@@ -312,12 +360,14 @@ class LightningModule(pl.LightningModule):
             top_probs = torch.unsqueeze(top_probs, dim=1)
             top_tokens = tokens[:, 0, 1:]
 
+            assert self.test_custom_accuracy is not None
             accuracy_dict = self.test_custom_accuracy(top_tokens, labels_temp, "transformer", True)
 
             if (logger := self._get_custom_logger()) is not None:
                 preds_vs_labels = self.get_test_preds_vs_labels(
                     top_tokens, labels_temp, dataset_path, top_probs
                 )
+                assert self.test_predictions is not None
                 self.test_predictions(preds_vs_labels)
                 logger.log_predictions(self.test_predictions, batch_idx, "test")
 
@@ -342,7 +392,7 @@ class LightningModule(pl.LightningModule):
 
         return loss
 
-    def predict_step(self, batch, batch_idx):
+    def predict_step(self, batch: dict[str, Any], batch_idx: int) -> None:
         features, spectrum_info = batch.values()
 
         if isinstance(self.model, TransformerNetwork):
@@ -351,13 +401,21 @@ class LightningModule(pl.LightningModule):
             if (logger := self._get_custom_logger()) is not None:
                 logger.log_predictions(tokens, probabilities, spectrum_info)
 
-    def get_preds_vs_labels(self, batch_idx, output, labels, dataset_path):
+    def get_preds_vs_labels(
+        self, batch_idx: int, output: torch.Tensor, labels: torch.Tensor, dataset_path: torch.Tensor
+    ) -> torch.Tensor:
         epoch_batch = torch.tensor([self.current_epoch, batch_idx]).type_as(output)
         epoch_batch = epoch_batch.repeat(len(output), 1)
         preds_vs_labels = torch.cat([epoch_batch, output, labels, dataset_path], dim=1)
         return preds_vs_labels
 
-    def get_test_preds_vs_labels(self, output, labels, dataset_path, confidence_scores):
+    def get_test_preds_vs_labels(
+        self,
+        output: torch.Tensor,
+        labels: torch.Tensor,
+        dataset_path: torch.Tensor,
+        confidence_scores: torch.Tensor,
+    ) -> torch.Tensor:
         preds_vs_labels = torch.cat([output, labels, dataset_path, confidence_scores], dim=1)
         return preds_vs_labels
 
@@ -372,7 +430,7 @@ class LightningModule(pl.LightningModule):
         else:
             raise ValueError(f"Unknown model type: {model_type!r}")
 
-    def save_model(self, output_folder):
+    def save_model(self, output_folder: str) -> None:
         output_file = os.path.join(output_folder, "lipidetective_model.pth")
         torch.save(self.model.state_dict(), output_file)
         print("Model saved.")

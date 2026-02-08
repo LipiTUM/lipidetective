@@ -49,7 +49,7 @@ class H5Dataset(Dataset[dict[str, Any]]):
     def __len__(self) -> int:
         return self.dataset_len
 
-    def __getitem__(self, index: int) -> dict:
+    def __getitem__(self, index: int) -> dict[str, Any]:
         # Handles first opening of HDF5 file and ensures it is only opened once for all parallel processes
         if self.hdf5_file is None:
             self.hdf5_file = h5py.File(self.file_path, "r")

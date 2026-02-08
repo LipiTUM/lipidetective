@@ -1,6 +1,9 @@
+from __future__ import annotations
+
 import math
 import os
 import pathlib
+from typing import Any
 
 import torch
 import torch.nn as nn
@@ -11,7 +14,7 @@ from lipidetective.helpers.utils import read_yaml
 
 
 class TransformerNetwork(nn.Module):
-    def __init__(self, config: dict, output_attentions: bool = False):
+    def __init__(self, config: dict[str, Any], output_attentions: bool = False) -> None:
         super().__init__()
 
         self.config = config
@@ -29,7 +32,7 @@ class TransformerNetwork(nn.Module):
             in_features=self.config["transformer"]["d_model"], out_features=out_vocab_size
         )  # tgt vocab size - 30
 
-    def forward(self, src: Tensor, tgt: Tensor):
+    def forward(self, src: Tensor, tgt: Tensor) -> Tensor | tuple[Tensor, list[Tensor]]:
         src_padding_mask, tgt_padding_mask, nopeak_mask = self.generate_mask(src, tgt)
 
         encoder_output = self.encoder(src, src_padding_mask)
@@ -37,7 +40,7 @@ class TransformerNetwork(nn.Module):
             tgt, encoder_output, nopeak_mask, tgt_padding_mask, src_padding_mask
         )
 
-        output = self.final_lin_layer(decoder_output)
+        output: Tensor = self.final_lin_layer(decoder_output)
 
         if self.output_attentions:
             encoder_attention = self.get_attention_layers(src, src_padding_mask)
@@ -45,7 +48,7 @@ class TransformerNetwork(nn.Module):
         else:
             return output
 
-    def generate_mask(self, src: Tensor, tgt: Tensor):
+    def generate_mask(self, src: Tensor, tgt: Tensor) -> tuple[Tensor, Tensor, Tensor]:
         src_padding_mask = src == 0
         tgt_padding_mask = tgt == 0
 
@@ -58,7 +61,7 @@ class TransformerNetwork(nn.Module):
 
         return src_padding_mask, tgt_padding_mask, nopeak_mask
 
-    def predict(self, src):
+    def predict(self, src: Tensor) -> Tensor:
         src_padding_mask = src == 0
         tgt = (torch.zeros((src.shape[0], self.seq_length))).type_as(src).long()
         tgt[:, 0] = 1
@@ -68,7 +71,7 @@ class TransformerNetwork(nn.Module):
 
         return tgt[:, 1:]
 
-    def predict_top_3(self, src):
+    def predict_top_3(self, src: Tensor) -> tuple[Tensor, Tensor]:
         src_padding_mask = src == 0
         tgt = (torch.zeros((src.shape[0], self.seq_length))).type_as(src).long()
         tgt[:, 0] = 1
@@ -147,7 +150,7 @@ class TransformerNetwork(nn.Module):
 
         return final_probabilities, final_tokens
 
-    def predict_beam_decode(self, src):
+    def predict_beam_decode(self, src: Tensor) -> Tensor:
         src_padding_mask = src == 0
         tgt = (torch.zeros((src.shape[0], self.seq_length))).type_as(src).long()
         tgt[:, 0] = 1
@@ -157,7 +160,7 @@ class TransformerNetwork(nn.Module):
 
         return tgt[:, 1:]
 
-    def predict_greedy(self, src):
+    def predict_greedy(self, src: Tensor) -> Tensor:
         src_padding_mask = src == 0
         tgt = (torch.zeros((src.shape[0], self.seq_length))).type_as(src).long()
         tgt[:, 0] = 1
@@ -167,22 +170,26 @@ class TransformerNetwork(nn.Module):
 
         return tgt[:, 1:]
 
-    def return_encoder_embedding(self, src):
+    def return_encoder_embedding(self, src: Tensor) -> Tensor:
         src_padding_mask = src == 0
-        encoder_output = self.encoder(src, src_padding_mask)
+        encoder_output: Tensor = self.encoder(src, src_padding_mask)
 
         return encoder_output
 
-    def greedy_decode(self, encoder_output, tgt, memory_padding_mask):
+    def greedy_decode(
+        self, encoder_output: Tensor, tgt: Tensor, memory_padding_mask: Tensor
+    ) -> None:
         for idx in range(1, self.seq_length):
             tgt_temp = tgt[:, :idx]
 
-            output = self.decoder(tgt_temp, encoder_output, memory_padding_mask=memory_padding_mask)
+            output: Tensor = self.decoder(
+                tgt_temp, encoder_output, memory_padding_mask=memory_padding_mask
+            )
             output = self.final_lin_layer(output)
-            output_tokens = torch.argmax(output, dim=-1)
+            output_tokens: Tensor = torch.argmax(output, dim=-1)
             tgt[:, idx] = output_tokens[:, -1]
 
-    def beam_decode(self, encoder_output, tgt, memory_padding_mask):
+    def beam_decode(self, encoder_output: Tensor, tgt: Tensor, memory_padding_mask: Tensor) -> None:
         nr_beams = 3
         batch_size = tgt.shape[0]
 
@@ -265,9 +272,9 @@ class TransformerNetwork(nn.Module):
 
         tgt[:, 1:] = final_output[:, 1:]
 
-    def get_attention_layers(self, src, src_key_padding_mask):
+    def get_attention_layers(self, src: Tensor, src_key_padding_mask: Tensor) -> list[Tensor]:
         x = self.encoder.input_encoder(src)
-        encoder_attention = []
+        encoder_attention: list[Tensor] = []
 
         with torch.no_grad():
             for layer in self.encoder.transformer_encoder.layers:
@@ -286,7 +293,7 @@ class TransformerNetwork(nn.Module):
 
 
 class Encoder(nn.Module):
-    def __init__(self, config):
+    def __init__(self, config: dict[str, Any]) -> None:
         super().__init__()
         self.config = config
         self.input_encoder = PeakEncoder(config)
@@ -303,14 +310,14 @@ class Encoder(nn.Module):
             layer, num_layers=config["transformer"]["num_layers"], enable_nested_tensor=False
         )
 
-    def forward(self, x, mask):
+    def forward(self, x: Tensor, mask: Tensor) -> Tensor:
         x = self.input_encoder(x)
         x = self.transformer_encoder(x, src_key_padding_mask=mask)
         return x
 
 
 class PeakEncoder(nn.Module):
-    def __init__(self, config):
+    def __init__(self, config: dict[str, Any]) -> None:
         super().__init__()
         self.config = config
         n_peaks = config["input_embedding"]["n_peaks"]
@@ -324,19 +331,19 @@ class PeakEncoder(nn.Module):
         self.input_embedding = Embedding(vocab_size, d_model)
         self.positional_encoding = PositionalEncoding(d_model, n_peaks)
 
-    def forward(self, x):
+    def forward(self, x: Tensor) -> Tensor:
         x = self.input_embedding(x)
         x = self.positional_encoding(x)
         return x
 
 
 class Embedding(nn.Module):
-    def __init__(self, vocab_size: int, d_model: int):
+    def __init__(self, vocab_size: int, d_model: int) -> None:
         super().__init__()
         self.d_model = d_model
         self.embed = nn.Embedding(vocab_size, self.d_model)
 
-    def forward(self, x):
+    def forward(self, x: Tensor) -> Tensor:
         x = self.embed(x)
         # make embeddings relatively larger
         x = x * math.sqrt(self.d_model)
@@ -344,7 +351,7 @@ class Embedding(nn.Module):
 
 
 class PositionalEncoding(nn.Module):
-    def __init__(self, d_model: int, max_seq_len: int = 50):
+    def __init__(self, d_model: int, max_seq_len: int = 50) -> None:
         super().__init__()
         # create constant 'pe' matrix with values dependant on
         # pos and i
@@ -357,7 +364,7 @@ class PositionalEncoding(nn.Module):
         pe = pe.unsqueeze(0)
         self.register_buffer("pe", pe)
 
-    def forward(self, x):
+    def forward(self, x: Tensor) -> Tensor:
         # add constant to embedding
         seq_len = x.size(1)
         x = x + Variable(self.pe[:, :seq_len], requires_grad=False)  # type: ignore[index]
@@ -365,7 +372,7 @@ class PositionalEncoding(nn.Module):
 
 
 class Decoder(nn.Module):
-    def __init__(self, config, vocab_size):
+    def __init__(self, config: dict[str, Any], vocab_size: int) -> None:
         super().__init__()
         self.config = config
 
@@ -384,11 +391,16 @@ class Decoder(nn.Module):
         )
 
     def forward(
-        self, tgt, memory, nopeak_mask=None, tgt_padding_mask=None, memory_padding_mask=None
-    ):
-        tgt = self.name_encoder(tgt)
-        x = self.transformer_decoder(
-            tgt=tgt,
+        self,
+        tgt: Tensor,
+        memory: Tensor,
+        nopeak_mask: Tensor | None = None,
+        tgt_padding_mask: Tensor | None = None,
+        memory_padding_mask: Tensor | None = None,
+    ) -> Tensor:
+        tgt_encoded: Tensor = self.name_encoder(tgt)
+        x: Tensor = self.transformer_decoder(
+            tgt=tgt_encoded,
             memory=memory,
             tgt_mask=nopeak_mask,
             tgt_key_padding_mask=tgt_padding_mask,
@@ -398,7 +410,7 @@ class Decoder(nn.Module):
 
 
 class NameEncoder(nn.Module):
-    def __init__(self, config, vocab_size):
+    def __init__(self, config: dict[str, Any], vocab_size: int) -> None:
         super().__init__()
         self.config = config
         seq_length = config["transformer"]["output_seq_length"]
@@ -407,7 +419,7 @@ class NameEncoder(nn.Module):
         self.name_embedding = Embedding(vocab_size, d_model)
         self.positional_encoding = PositionalEncoding(d_model, seq_length)
 
-    def forward(self, x):
-        x = self.name_embedding(x)
-        x = self.positional_encoding(x)
-        return x
+    def forward(self, x: Tensor) -> Tensor:
+        x_emb: Tensor = self.name_embedding(x)
+        x_pos: Tensor = self.positional_encoding(x_emb)
+        return x_pos

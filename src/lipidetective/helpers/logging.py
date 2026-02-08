@@ -1,6 +1,8 @@
+from __future__ import annotations
+
 import csv
 import os
-from typing import cast
+from typing import Any, cast
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -9,6 +11,7 @@ import seaborn as sns
 import torch
 from matplotlib.axes import Axes
 from matplotlib.ticker import ScalarFormatter
+from numpy.typing import NDArray
 from pytorch_lightning.loggers.logger import Logger
 from pytorch_lightning.utilities import rank_zero_only
 from torch import Tensor
@@ -18,10 +21,12 @@ from lipidetective.helpers.lipid_library import LipidLibrary
 
 
 class Evaluator:
-    def __init__(self, library):
+    def __init__(self, library: LipidLibrary) -> None:
         self.library: LipidLibrary = library
 
-    def evaluate_regression_accuracy(self, predictions, lipid_info):
+    def evaluate_regression_accuracy(
+        self, predictions: Any, lipid_info: dict[str, Any]
+    ) -> tuple[int, int]:
         nr_correct = 0
 
         for idx, prediction in enumerate(predictions):
@@ -47,9 +52,13 @@ class Evaluator:
         return nr_correct, len(predictions)
 
     def evaluate_custom_transformer_accuracy(
-        self, predictions, labels, lipid_name_dict, is_last_epoch
-    ):
-        accuracy_sum = 0
+        self,
+        predictions: Any,
+        labels: Any,
+        lipid_name_dict: dict[str, int],
+        is_last_epoch: bool,
+    ) -> tuple[float, int, int, Tensor]:
+        accuracy_sum = 0.0
         nr_correct = 0
         nr_lipids = len(lipid_name_dict)
         prediction_matrix = torch.zeros((nr_lipids + 1, nr_lipids))
@@ -90,19 +99,19 @@ class Evaluator:
 
     def generate_prediction_info(
         self,
-        label_hg,
-        label_sc1,
-        label_sc2,
-        pred_hg,
-        pred_sc1,
-        pred_sc2,
-        pred_hg_value,
-        pred_sc1_value,
-        pred_sc2_value,
-        batch,
-        epoch,
-        idx,
-    ):
+        label_hg: str,
+        label_sc1: str,
+        label_sc2: str,
+        pred_hg: str,
+        pred_sc1: str,
+        pred_sc2: str,
+        pred_hg_value: float,
+        pred_sc1_value: float,
+        pred_sc2_value: float,
+        batch: int,
+        epoch: int,
+        idx: int,
+    ) -> dict[str, Any]:
         label_hg_value = self.library.headgroups_mass_norm[label_hg]
         label_sc1_value = self.library.side_chains_mass_norm[label_sc1]
         label_sc2_value = self.library.side_chains_mass_norm[label_sc2]
@@ -127,14 +136,14 @@ class Evaluator:
 
         return prediction_info
 
-    def find_nearest_headgroup(self, value):
+    def find_nearest_headgroup(self, value: float) -> tuple[str, float]:
         hg_key, hg_val = min(
             self.library.headgroups_mass_norm.items(), key=lambda x: abs(value - x[1])
         )
 
         return hg_key, hg_val
 
-    def find_nearest_side_chain(self, value):
+    def find_nearest_side_chain(self, value: float) -> tuple[str, float]:
         sc_key, sc_val = min(
             self.library.side_chains_mass_norm.items(), key=lambda x: abs(value - x[1])
         )
@@ -148,7 +157,7 @@ class CustomAccuracy(Metric):
     total: Tensor
     confusion_matrix: Tensor
 
-    def __init__(self, evaluator, lipid_species_names):
+    def __init__(self, evaluator: Evaluator, lipid_species_names: list[str]) -> None:
         super().__init__()
 
         self.add_state("correct", default=torch.tensor(0), dist_reduce_fx="sum")
@@ -166,7 +175,9 @@ class CustomAccuracy(Metric):
 
         self.evaluator = evaluator
 
-    def update(self, predictions, lipid_info, model: str, is_last_epoch: bool = False):
+    def update(
+        self, predictions: Any, lipid_info: Any, model: str, is_last_epoch: bool = False
+    ) -> None:
         if model == "transformer":
             (
                 accuracy_sum,
@@ -186,32 +197,32 @@ class CustomAccuracy(Metric):
         self.correct += nr_correct
         self.total += total
 
-    def compute(self):
+    def compute(self) -> Tensor:
         accuracy = self.correct / self.total
         mean_accuracy = self.accuracy_sum.float() / self.total
         return torch.tensor([accuracy, mean_accuracy])
 
-    def get_confusion_matrix(self):
+    def get_confusion_matrix(self) -> Tensor:
         return self.confusion_matrix
 
 
 class CustomLogger(Logger):
     def __init__(
         self,
-        save_dir,
-        version,
-        log_every_n_steps,
-        config,
-        trainset_names=None,
-        valset_names=None,
-        testset_names=None,
-        do_training=False,
-        do_validation=False,
-        do_testing=False,
-        trainset_lipids=None,
-        valset_lipids=None,
-        testset_lipids=None,
-    ):
+        save_dir: str,
+        version: str,
+        log_every_n_steps: int,
+        config: dict[str, Any],
+        trainset_names: list[str] | None = None,
+        valset_names: list[str] | None = None,
+        testset_names: list[str] | None = None,
+        do_training: bool = False,
+        do_validation: bool = False,
+        do_testing: bool = False,
+        trainset_lipids: list[str] | None = None,
+        valset_lipids: list[str] | None = None,
+        testset_lipids: list[str] | None = None,
+    ) -> None:
         super().__init__()
         self.model = config["model"]
         if self.model == "transformer":
@@ -254,7 +265,7 @@ class CustomLogger(Logger):
         if do_testing:
             self.test_csv_path, self.test_predictions_path = self.generate_output_files("test")
 
-    def generate_output_files(self, mode):
+    def generate_output_files(self, mode: str) -> tuple[str, str]:
         csv_path = os.path.join(self.save_path, f"{mode}_metrics.csv")
         predictions_path = os.path.join(self.save_path, f"{mode}_predictions.csv")
 
@@ -315,24 +326,24 @@ class CustomLogger(Logger):
         return csv_path, predictions_path
 
     @property
-    def name(self):
+    def name(self) -> str:
         return "custom_logger"
 
     @property
-    def experiment(self):
+    def experiment(self) -> None:
         return None
 
     @property
-    def save_dir(self):
+    def save_dir(self) -> str:
         return self.output_directory
 
     @property
-    def version(self):
+    def version(self) -> str:
         # Return the experiment version, int or str.
         return self.fold
 
     @rank_zero_only
-    def log_hyperparams(self, params):
+    def log_hyperparams(self, params: Any) -> None:
         # params is an argparse.Namespace
         # code to record hyperparameters goes here
         pass
@@ -417,7 +428,7 @@ class CustomLogger(Logger):
                     )
 
     @rank_zero_only
-    def log_predictions(self, cat_metric, batch_idx, workflow):
+    def log_predictions(self, cat_metric: Any, batch_idx: int, workflow: str) -> None:
         if workflow == "train":
             if batch_idx % self.log_every_n_steps == 0:
                 preds_vs_labels = cat_metric.compute().detach().cpu().numpy()
@@ -457,7 +468,9 @@ class CustomLogger(Logger):
 
         cat_metric.reset()
 
-    def transform_token_predictions_to_string(self, preds_vs_labels, dataset_names):
+    def transform_token_predictions_to_string(
+        self, preds_vs_labels: NDArray[Any], dataset_names: list[str] | None
+    ) -> NDArray[Any]:
         translated_tokens = []
 
         for row in preds_vs_labels:
@@ -471,7 +484,9 @@ class CustomLogger(Logger):
                     row[self.output_seq_length + 2 : (2 * self.output_seq_length) + 2]
                 )
             ).replace("<PAD>", "")
-            dataset_path = dataset_names[int(row[(2 * self.output_seq_length) + 2])]
+            dataset_path = (
+                dataset_names[int(row[(2 * self.output_seq_length) + 2])] if dataset_names else ""
+            )
             correct = prediction == label
             custom_accuracy = self.librarian.custom_accuracy_scoring(prediction, label)
             custom_correct = custom_accuracy == 1
@@ -491,7 +506,9 @@ class CustomLogger(Logger):
         translated_tokens_arr = np.array(translated_tokens)
         return translated_tokens_arr
 
-    def transform_test_token_predictions_to_string(self, preds_vs_labels, dataset_names):
+    def transform_test_token_predictions_to_string(
+        self, preds_vs_labels: NDArray[Any], dataset_names: list[str] | None
+    ) -> NDArray[Any]:
         translated_tokens = []
 
         for row in preds_vs_labels:
@@ -504,7 +521,9 @@ class CustomLogger(Logger):
                 )
             ).replace("<PAD>", "")
             confidence_score = row[-1]
-            dataset_path = dataset_names[int(row[(2 * self.output_seq_length)])]
+            dataset_path = (
+                dataset_names[int(row[(2 * self.output_seq_length)])] if dataset_names else ""
+            )
             correct = prediction == label
             custom_accuracy = self.librarian.custom_accuracy_scoring(prediction, label)
             custom_correct = custom_accuracy == 1
@@ -524,12 +543,12 @@ class CustomLogger(Logger):
         return translated_tokens_arr
 
     @rank_zero_only
-    def save(self):
+    def save(self) -> None:
         # Optional. Any code necessary to save logger data goes here
         pass
 
     @rank_zero_only
-    def finalize(self, status):
+    def finalize(self, status: str) -> None:
         # Optional. Any code that needs to be run after training finishes goes here
         if self.do_training:
             train_csv = pd.read_csv(self.train_csv_path)
@@ -553,14 +572,14 @@ class CustomLogger(Logger):
 
     def save_lipid_wise_metrics(
         self,
-        train_confusion_matrix=None,
-        train_lipids=None,
-        val_confusion_matrix=None,
-        val_lipids=None,
-        test_confusion_matrix=None,
-        test_lipids=None,
-    ):
-        if train_confusion_matrix is not None:
+        train_confusion_matrix: NDArray[Any] | None = None,
+        train_lipids: list[str] | None = None,
+        val_confusion_matrix: NDArray[Any] | None = None,
+        val_lipids: list[str] | None = None,
+        test_confusion_matrix: NDArray[Any] | None = None,
+        test_lipids: list[str] | None = None,
+    ) -> None:
+        if train_confusion_matrix is not None and train_lipids is not None:
             confusion_matrix_train_df = pd.DataFrame(
                 train_confusion_matrix, columns=train_lipids, index=train_lipids + ["Other"]
             )
@@ -574,7 +593,7 @@ class CustomLogger(Logger):
             if len(train_metrics_df) < 25:
                 self.plot_confusion_matrix_as_heatmap(confusion_matrix_train_df, "train")
 
-        if val_confusion_matrix is not None:
+        if val_confusion_matrix is not None and val_lipids is not None:
             confusion_matrix_val_df = pd.DataFrame(
                 val_confusion_matrix, columns=val_lipids, index=val_lipids + ["Other"]
             )
@@ -585,7 +604,7 @@ class CustomLogger(Logger):
 
             self.plot_confusion_matrix_as_heatmap(confusion_matrix_val_df, "validation")
 
-        if test_confusion_matrix is not None:
+        if test_confusion_matrix is not None and test_lipids is not None:
             confusion_matrix_test_df = pd.DataFrame(
                 test_confusion_matrix, columns=test_lipids, index=test_lipids + ["Other"]
             )
@@ -598,7 +617,7 @@ class CustomLogger(Logger):
 
             self.plot_confusion_matrix_as_heatmap(confusion_matrix_test_df, "testing")
 
-    def calculate_lipid_metrics(self, confusion_matrix):
+    def calculate_lipid_metrics(self, confusion_matrix: pd.DataFrame) -> pd.DataFrame:
         confusion_matrix["sum_predictions"] = confusion_matrix.sum(axis=1)
 
         calculated_scores = []
@@ -608,7 +627,7 @@ class CustomLogger(Logger):
             total_number_predictions = confusion_matrix.loc[lipid, "sum_predictions"]
 
             if total_number_predictions != 0:
-                precision = correct / total_number_predictions
+                precision = correct / total_number_predictions  # type: ignore[operator]
             else:
                 precision = 0
 
@@ -632,7 +651,7 @@ class CustomLogger(Logger):
 
         return calculated_scores_df
 
-    def plot_loss_and_accuracy(self, df, workflow, output_folder):
+    def plot_loss_and_accuracy(self, df: pd.DataFrame, workflow: str, output_folder: str) -> None:
         plot_name = (
             f"plot_loss_accuracy_{workflow}_{self.fold}.png"
             if self.fold != "."
@@ -668,7 +687,9 @@ class CustomLogger(Logger):
         plt.savefig(os.path.join(output_folder, plot_name), dpi=300)
         plt.close(figure)
 
-    def plot_loss_and_both_accuracies(self, df, workflow, output_folder):
+    def plot_loss_and_both_accuracies(
+        self, df: pd.DataFrame, workflow: str, output_folder: str
+    ) -> None:
         plot_name = (
             f"plot_loss_accuracies_{workflow}_{self.fold}.png"
             if self.fold != "."
@@ -712,7 +733,7 @@ class CustomLogger(Logger):
         plt.savefig(os.path.join(output_folder, plot_name), dpi=300)
         plt.close(figure)
 
-    def plot_loss_and_mae(self, df, workflow, output_folder):
+    def plot_loss_and_mae(self, df: pd.DataFrame, workflow: str, output_folder: str) -> None:
         plot_name = (
             f"plot_loss_mae_{workflow}_{self.fold}.png"
             if self.fold != "."
@@ -752,7 +773,7 @@ class CustomLogger(Logger):
         plt.savefig(os.path.join(output_folder, plot_name), dpi=300)
         plt.close(figure)
 
-    def plot_loss_and_r2(self, df, workflow, output_folder):
+    def plot_loss_and_r2(self, df: pd.DataFrame, workflow: str, output_folder: str) -> None:
         plot_name = (
             f"plot_loss_r2_{workflow}_{self.fold}.png"
             if self.fold != "."
@@ -781,7 +802,9 @@ class CustomLogger(Logger):
         plt.savefig(os.path.join(output_folder, plot_name), dpi=300)
         plt.close(figure)
 
-    def plot_confusion_matrix_as_heatmap(self, confusion_matrix, workflow):
+    def plot_confusion_matrix_as_heatmap(
+        self, confusion_matrix: pd.DataFrame, workflow: str
+    ) -> None:
         plot_name = f"confusion_matrix_heatmap_{workflow}.png"
 
         figure = plt.figure(figsize=(12, 10))
@@ -802,7 +825,7 @@ class CustomLogger(Logger):
 
 
 class PredictionLogger(Logger):
-    def __init__(self, save_dir, log_every_n_steps, config):
+    def __init__(self, save_dir: str, log_every_n_steps: int, config: dict[str, Any]) -> None:
         super().__init__()
         self.model = config["model"]
         if self.model == "transformer":
@@ -845,7 +868,7 @@ class PredictionLogger(Logger):
 
         self.predictions_path, self.top_3_predictions_path = self.generate_output_files()
 
-    def generate_output_files(self):
+    def generate_output_files(self) -> tuple[str, str | None]:
         predictions_path = os.path.join(self.output_directory, "predictions.csv")
 
         with open(predictions_path, "w") as f:
@@ -876,19 +899,19 @@ class PredictionLogger(Logger):
         return predictions_path, top_3_predictions_path
 
     @property
-    def name(self):
+    def name(self) -> str:
         return "custom_logger"
 
     @property
-    def experiment(self):
+    def experiment(self) -> None:
         return None
 
     @property
-    def save_dir(self):
+    def save_dir(self) -> str:
         return self.output_directory
 
     @property
-    def version(self):
+    def version(self) -> str:
         # Return the experiment version, int or str.
         return "."
 
@@ -897,13 +920,15 @@ class PredictionLogger(Logger):
         pass
 
     @rank_zero_only
-    def log_hyperparams(self, params):
+    def log_hyperparams(self, params: Any) -> None:
         # params is an argparse.Namespace
         # code to record hyperparameters goes here
         pass
 
     @rank_zero_only
-    def log_predictions(self, tokens, probabilities, spectrum_info):
+    def log_predictions(
+        self, tokens: Tensor, probabilities: Tensor, spectrum_info: dict[str, Any]
+    ) -> None:
         rows, rows_top3 = self.transform_test_token_predictions_to_string(
             tokens, probabilities, spectrum_info
         )
@@ -913,11 +938,13 @@ class PredictionLogger(Logger):
             writer.writerows(rows)
 
         if self.save_top3:
-            with open(self.top_3_predictions_path, "a") as f:
+            with open(self.top_3_predictions_path, "a") as f:  # type: ignore
                 writer = csv.writer(f)
                 writer.writerows(rows_top3)
 
-    def transform_test_token_predictions_to_string(self, tokens, probabilities, spectrum_info):
+    def transform_test_token_predictions_to_string(
+        self, tokens: Tensor, probabilities: Tensor, spectrum_info: dict[str, Any]
+    ) -> tuple[NDArray[Any], NDArray[Any]]:
         translated_tokens = []
         translated_tokens_top_3 = []
 
@@ -965,11 +992,11 @@ class PredictionLogger(Logger):
         return translated_tokens_arr, translated_tokens_top_3_arr
 
     @rank_zero_only
-    def save(self):
+    def save(self) -> None:
         # Optional. Any code necessary to save logger data goes here
         pass
 
     @rank_zero_only
-    def finalize(self, status):
+    def finalize(self, status: str) -> None:
         # Optional. Any code that needs to be run after training finishes goes here
         pass

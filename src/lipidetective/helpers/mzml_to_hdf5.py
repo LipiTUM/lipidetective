@@ -1,12 +1,15 @@
+from __future__ import annotations
+
 import argparse
 import os
+from typing import Any
 
 import h5py
 import numpy as np
 from pyteomics import mzml
 
 
-def parse_arguments():
+def parse_arguments() -> tuple[str, str]:
     parser = argparse.ArgumentParser(
         description="This script takes in a folder containing mzML files and prepares them "
         "for processing with LipiDetective as HDF5 files."
@@ -23,7 +26,9 @@ def parse_arguments():
     return arguments.mzml_dir, arguments.output_dir
 
 
-def add_spectrum_to_hdf5(spectrum, file_number, file_name, hdf5_file):
+def add_spectrum_to_hdf5(
+    spectrum: dict[str, Any], file_number: int, file_name: str, hdf5_file: h5py.File
+) -> None:
     mz = spectrum["m/z array"]
     intensity = spectrum["intensity array"]
     intensity = intensity / intensity.max()

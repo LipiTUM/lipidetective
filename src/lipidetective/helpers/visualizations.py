@@ -1,17 +1,24 @@
+from __future__ import annotations
+
 import os
 from typing import cast
 
 import matplotlib.pyplot as plt
+import pandas as pd
 import seaborn as sns
 from matplotlib.axes import Axes
 from matplotlib.ticker import ScalarFormatter
 
 
-def generate_plots(metrics, trial_id, output_folder, evaluated_params):
+def generate_plots(
+    metrics: pd.DataFrame, trial_id: int, output_folder: str, evaluated_params: str
+) -> None:
     plot_loss_and_accuracy(metrics, trial_id, output_folder, evaluated_params)
 
 
-def plot_loss_and_accuracy(metric, trial_id, output_path, evaluated_params):
+def plot_loss_and_accuracy(
+    metric: pd.DataFrame, trial_id: int, output_path: str, evaluated_params: str
+) -> None:
     # Training plot
     output_plot = os.path.join(output_path, f"plot_loss_accuracy_training_trial_{trial_id}.png")
 
@@ -76,7 +83,9 @@ def plot_loss_and_accuracy(metric, trial_id, output_path, evaluated_params):
     plt.close(figure)
 
 
-def plot_loss_and_mae(metric, trial_id, output_path, evaluated_params):
+def plot_loss_and_mae(
+    metric: pd.DataFrame, trial_id: int, output_path: str, evaluated_params: str
+) -> None:
     output_plot_training = os.path.join(output_path, f"plot_loss_mae_training_trial_{trial_id}.png")
     output_plot_validation = os.path.join(
         output_path, f"plot_loss_mae_validation_trial_{trial_id}.png"
@@ -144,7 +153,9 @@ def plot_loss_and_mae(metric, trial_id, output_path, evaluated_params):
     plt.close(figure)
 
 
-def plot_loss_and_r2(metric, trial_id, output_path, evaluated_params):
+def plot_loss_and_r2(
+    metric: pd.DataFrame, trial_id: int, output_path: str, evaluated_params: str
+) -> None:
     output_plot_training = os.path.join(output_path, f"plot_loss_r2_training_trial_{trial_id}.png")
     output_plot_validation = os.path.join(
         output_path, f"plot_loss_r2_validation_trial_{trial_id}.png"

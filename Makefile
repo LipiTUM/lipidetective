@@ -43,7 +43,7 @@ lint:
 # Type checking
 type-check:
 	@echo "Running mypy type checking..."
-	uv run mypy src/
+	uv run mypy src/ --check-untyped-defs
 
 # Testing
 test:

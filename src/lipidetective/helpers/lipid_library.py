@@ -1,7 +1,10 @@
+from __future__ import annotations
+
 import os
 import pathlib
 import re
 from statistics import mean
+from typing import Any, NamedTuple
 
 import torch
 import torch.nn.functional as F
@@ -9,8 +12,20 @@ import torch.nn.functional as F
 from lipidetective.helpers.utils import is_lipid_class_with_slash, read_yaml
 
 
+class LipidComponents(NamedTuple):
+    """Components extracted from a lipid species name using regex parsing."""
+
+    lipid_class: str
+    fatty_acids: list[str]
+    bond_types: list[str]
+    bond_types_2: list[str]
+    functional_groups_1: list[str]
+    functional_groups_2: list[str]
+    functional_groups_3: list[str]
+
+
 class LipidLibrary:
-    def __init__(self):
+    def __init__(self) -> None:
         cwd = pathlib.Path(__file__).parent.parent.resolve()
 
         self.molecular_lipid_species = read_yaml(
@@ -78,19 +93,21 @@ class LipidLibrary:
         self.functional_groups_re_4 = re.compile(r"(?<=_[0-9]{2}:[0-9]{1});[a-zA-Z1-9]+(?=[_/])")
         self.adduct_re = re.compile(r" \[M[+\-]\S+][+\-](?=<EOS>)")
 
-    def get_regression_label(self, lipid_species: str):
-        species_info = self.molecular_lipid_species[lipid_species].copy()
+    def get_regression_label(self, lipid_species: str) -> tuple[torch.Tensor, dict[str, Any]]:
+        species_info: dict[str, Any] = self.molecular_lipid_species[lipid_species].copy()
         species_info["molecular_lipid_species"] = lipid_species
 
-        headgroup_mass = self.headgroups_mass_norm[species_info["headgroup"]]
-        sc_1_mass = self.side_chains_mass_norm[species_info["fatty_acid_sn1"]]
-        sc_2_mass = self.side_chains_mass_norm[species_info["fatty_acid_sn2"]]
+        headgroup_mass: float = self.headgroups_mass_norm[species_info["headgroup"]]
+        sc_1_mass: float = self.side_chains_mass_norm[species_info["fatty_acid_sn1"]]
+        sc_2_mass: float = self.side_chains_mass_norm[species_info["fatty_acid_sn2"]]
 
-        label = torch.tensor([headgroup_mass, sc_1_mass, sc_2_mass])
+        label: torch.Tensor = torch.tensor([headgroup_mass, sc_1_mass, sc_2_mass])
 
         return label, species_info
 
-    def get_transformer_label(self, lipid_species: str, adduct: str, output_seq_length: int):
+    def get_transformer_label(
+        self, lipid_species: str, adduct: str, output_seq_length: int
+    ) -> tuple[torch.Tensor, dict[str, Any]]:
         if lipid_species:
             lipid_name_components = self.parse_lipid_species_components(lipid_species)
             name_tokens = [self.tokens[letter] for letter in lipid_name_components]
@@ -112,28 +129,28 @@ class LipidLibrary:
                 input=token_tensor, pad=(0, nr_tokens_to_append), mode="constant", value=0
             )
 
-        species_info = {}
+        species_info: dict[str, Any] = {}
         species_info["molecular_lipid_species"] = lipid_species
         species_info["adduct"] = adduct
         species_info["lipid_class"] = lipid_name_components[0]
 
         return token_tensor, species_info
 
-    def parse_lipid_species_components(self, lipid_species: str):
+    def parse_lipid_species_components(self, lipid_species: str) -> list[str]:
         match = self.lipid_class_re.match(lipid_species)
         if match is None:
             raise ValueError(f"Could not parse lipid class from: {lipid_species}")
-        lipid_class = match.group()
-        fatty_acids = self.fatty_acids_re.findall(lipid_species)
-        bond_types = self.bond_types_re.findall(lipid_species)
-        bond_types_2 = self.bond_types_2_re.findall(lipid_species)
-        functional_groups_1 = self.functional_groups_re_1.findall(lipid_species)
-        functional_groups_1_2 = self.functional_groups_re_1_2.findall(lipid_species)
-        functional_groups_2 = self.functional_groups_re_2.findall(lipid_species)
-        functional_groups_3 = self.functional_groups_re_3.findall(lipid_species)
-        functional_groups_4 = self.functional_groups_re_4.findall(lipid_species)
+        lipid_class: str = match.group()
+        fatty_acids: list[str] = self.fatty_acids_re.findall(lipid_species)
+        bond_types: list[str] = self.bond_types_re.findall(lipid_species)
+        bond_types_2: list[str] = self.bond_types_2_re.findall(lipid_species)
+        functional_groups_1: list[str] = self.functional_groups_re_1.findall(lipid_species)
+        functional_groups_1_2: list[str] = self.functional_groups_re_1_2.findall(lipid_species)
+        functional_groups_2: list[str] = self.functional_groups_re_2.findall(lipid_species)
+        functional_groups_3: list[str] = self.functional_groups_re_3.findall(lipid_species)
+        functional_groups_4: list[str] = self.functional_groups_re_4.findall(lipid_species)
 
-        lipid_name_components = [lipid_class]
+        lipid_name_components: list[str] = [lipid_class]
 
         if bond_types:
             lipid_name_components.append(bond_types[0])
@@ -167,7 +184,7 @@ class LipidLibrary:
 
         return lipid_name_components
 
-    def get_lipid_species_components(self, lipid_species: str):
+    def get_lipid_species_components(self, lipid_species: str) -> LipidComponents:
         lipid_class_match = self.lipid_class_re.match(lipid_species)
         if lipid_class_match:
             lipid_class = lipid_class_match.group().strip()
@@ -180,24 +197,24 @@ class LipidLibrary:
         functional_groups_2 = self.functional_groups_re_2.findall(lipid_species)
         functional_groups_3 = self.functional_groups_re_3.findall(lipid_species)
 
-        return (
-            lipid_class,
-            fatty_acids,
-            bond_types,
-            bond_types_2,
-            functional_groups_1,
-            functional_groups_2,
-            functional_groups_3,
+        return LipidComponents(
+            lipid_class=lipid_class,
+            fatty_acids=fatty_acids,
+            bond_types=bond_types,
+            bond_types_2=bond_types_2,
+            functional_groups_1=functional_groups_1,
+            functional_groups_2=functional_groups_2,
+            functional_groups_3=functional_groups_3,
         )
 
-    def normalize_precursor_mass(self, precursor_mass):
+    def normalize_precursor_mass(self, precursor_mass: float) -> float:
         return (precursor_mass - self.mean_precursor_mass) / self.max_precursor_mass_norm
 
-    def translate_tokens_to_name(self, tokens):
-        name = [self.tokens_inv[token.item()] for token in tokens]
+    def translate_tokens_to_name(self, tokens: torch.Tensor) -> list[str]:
+        name: list[str] = [self.tokens_inv[token.item()] for token in tokens]
         return name
 
-    def custom_accuracy_scoring(self, prediction, label):
+    def custom_accuracy_scoring(self, prediction: Any, label: Any) -> float:
         (
             pred_class,
             pred_fa,

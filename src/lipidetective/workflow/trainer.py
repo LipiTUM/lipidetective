@@ -1,8 +1,11 @@
+from __future__ import annotations
+
 import copy
 import logging
 import os
 from datetime import datetime
 from random import shuffle
+from typing import Any, NamedTuple
 
 import h5py
 import pandas as pd
@@ -35,12 +38,21 @@ from lipidetective.workflow.lightning_module import LightningModule
 from lipidetective.workflow.prediction_dataset import PredictionDataset
 
 
+class DataSplit(NamedTuple):
+    """Data splits for k-fold cross-validation or train/val split."""
+
+    trainsets: list[H5Dataset]
+    valsets: list[H5Dataset]
+    trainset_lipids: list[list[str]]
+    valset_lipids: list[list[str]]
+
+
 class Trainer:
     """The trainer class creates the lightning module and executes the specified workflow. It handles processing and
     splitting of the dataset.
     """
 
-    def __init__(self, config):
+    def __init__(self, config: dict[str, Any]) -> None:
         self.config = config
 
         if self.config["model"] != "random_forest":
@@ -79,8 +91,12 @@ class Trainer:
                 else 0
             )
 
-    def train_with_validation(self):
-        trainsets, valsets, trainset_lipids, valset_lipids = self.perform_data_split()
+    def train_with_validation(self) -> None:
+        data_split = self.perform_data_split()
+        trainsets = data_split.trainsets
+        valsets = data_split.valsets
+        trainset_lipids = data_split.trainset_lipids
+        valset_lipids = data_split.valset_lipids
 
         logging.info(f"Trainset: {len(trainsets[0])}")
         logging.info(f"Valset: {len(valsets[0])}")
@@ -132,8 +148,8 @@ class Trainer:
                 do_validation=True,
                 trainset_names=copy.deepcopy(trainsets[fold].dataset_names),
                 valset_names=copy.deepcopy(valsets[fold].dataset_names),
-                trainset_lipids=trainset_lipids,
-                valset_lipids=valset_lipids,
+                trainset_lipids=trainset_lipids[fold],
+                valset_lipids=valset_lipids[fold],
             )
 
             if "wandb" in self.config:
@@ -155,9 +171,9 @@ class Trainer:
 
             if self.config["model"] == "transformer":
                 custom_logger.save_lipid_wise_metrics(
-                    pl_module.train_custom_accuracy.metric.get_confusion_matrix(),  # type: ignore[operator]
+                    pl_module.train_custom_accuracy.metric.get_confusion_matrix(),  # type: ignore[operator, union-attr]
                     trainset_lipids[fold],
-                    pl_module.val_custom_accuracy.metric.get_confusion_matrix(),  # type: ignore[operator]
+                    pl_module.val_custom_accuracy.metric.get_confusion_matrix(),  # type: ignore[operator, union-attr]
                     valset_lipids[fold],
                 )
 
@@ -168,7 +184,7 @@ class Trainer:
                 else:
                     pl_module.save_model(self.output_folder)
 
-    def train_without_validation(self):
+    def train_without_validation(self) -> None:
         with h5py.File(self.config["files"]["train_input"], "r") as hdf5_file:
             dataset_names = list(hdf5_file["all_datasets"].keys())
 
@@ -217,14 +233,14 @@ class Trainer:
 
         if self.config["model"] == "transformer":
             custom_logger.save_lipid_wise_metrics(
-                pl_module.train_custom_accuracy.metric.get_confusion_matrix(),  # type: ignore[operator]
+                pl_module.train_custom_accuracy.metric.get_confusion_matrix(),  # type: ignore[operator, union-attr]
                 dataset_lipids,
             )
 
         if self.config["workflow"]["save_model"]:
             pl_module.save_model(self.output_folder)
 
-    def test(self):
+    def test(self) -> None:
         """
         This loop is for analyzing the models performance on a previously unseen labeled test dataset.
         """
@@ -271,11 +287,11 @@ class Trainer:
 
         if self.config["model"] == "transformer":
             custom_logger.save_lipid_wise_metrics(
-                test_confusion_matrix=pl_module.test_custom_accuracy.metric.get_confusion_matrix(),  # type: ignore[operator]
+                test_confusion_matrix=pl_module.test_custom_accuracy.metric.get_confusion_matrix(),  # type: ignore[operator, union-attr]
                 test_lipids=dataset_lipids,
             )
 
-    def predict(self):
+    def predict(self) -> None:
         """
         Predicts lipid species for unlabeled data. Input is one or more mzML.
         """
@@ -309,7 +325,7 @@ class Trainer:
 
             trainer.predict(model=pl_module, dataloaders=data_loader)
 
-    def get_pred_files(self):
+    def get_pred_files(self) -> list[str]:
         input_path = self.config["files"]["predict_input"]
 
         if os.path.isfile(input_path):
@@ -322,9 +338,13 @@ class Trainer:
                     files.append(file_path)
             return files
 
-    def schedule_tuning(self):
+    def schedule_tuning(self) -> None:
         logging.info(f"Scheduling tuning, cuda is available: {torch.cuda.is_available()}")
-        trainsets, valsets, trainset_lipids, valset_lipids = self.perform_data_split()
+        data_split = self.perform_data_split()
+        trainsets = data_split.trainsets
+        valsets = data_split.valsets
+        trainset_lipids = data_split.trainset_lipids
+        valset_lipids = data_split.valset_lipids
 
         logging.info(f"Trainset: {len(trainsets[0])}")
         logging.info(f"Valset: {len(valsets[0])}")
@@ -381,8 +401,14 @@ class Trainer:
             file.write(string_to_write)
 
     def tune_model(
-        self, config, num_epochs, train_loader, val_loader, trainset_lipids, valset_lipids
-    ):
+        self,
+        config: dict[str, Any],
+        num_epochs: int,
+        train_loader: DataLoader[Any],
+        val_loader: DataLoader[Any],
+        trainset_lipids: list[str],
+        valset_lipids: list[str],
+    ) -> None:
         pl_module = LightningModule(
             config,
             evaluator=self.evaluator,
@@ -411,7 +437,7 @@ class Trainer:
 
         trainer.fit(model=pl_module, train_dataloaders=train_loader, val_dataloaders=val_loader)
 
-    def prepare_tune_config(self):
+    def prepare_tune_config(self) -> None:
         self.check_parameter_for_tuning(config_section="training", parameter="learning_rate")
         self.check_parameter_for_tuning(config_section="training", parameter="lr_step")
         self.check_parameter_for_tuning(config_section="training", parameter="batch")
@@ -423,23 +449,23 @@ class Trainer:
             self.check_parameter_for_tuning(config_section="transformer", parameter="ffn_hidden")
             self.check_parameter_for_tuning(config_section="transformer", parameter="num_layers")
 
-    def check_parameter_for_tuning(self, config_section: str, parameter: str):
+    def check_parameter_for_tuning(self, config_section: str, parameter: str) -> None:
         if isinstance(self.config[config_section][parameter], list):
             self.config[config_section][parameter] = tune.grid_search(
                 self.config[config_section][parameter]
             )
 
-    def parse_lipid_dataset_name(self, lipid_name):
+    def parse_lipid_dataset_name(self, lipid_name: str) -> str:
         lipid_name = lipid_name.split(" | ")[0]
         if is_lipid_class_with_slash(lipid_name):
             lipid_name = lipid_name.replace("_", "/")
         return lipid_name
 
-    def get_unique_lipids(self, dataset_list):
+    def get_unique_lipids(self, dataset_list: list[str]) -> list[str]:
         unique_lipids = {self.parse_lipid_dataset_name(name) for name in dataset_list}
         return list(unique_lipids)
 
-    def perform_data_split(self):
+    def perform_data_split(self) -> DataSplit:
         """This method extracts the names of all datasets in the HDF5 input file and saves them in separate lists for the
         training and validation sets. These lists can than be used to iterate over the dataset using lazy loading if the
         whole dataset is too big to be loaded at once."""
@@ -482,24 +508,19 @@ class Trainer:
             # Sort dataset names into train and validation set
             if self.config["files"]["splitting_instructions"]:
                 # Split via instructions in YAML file
-                (
-                    trainsets,
-                    valsets,
-                    trainset_lipids,
-                    valset_lipids,
-                ) = self.split_data_via_instructions(all_dataset_names)
+                return self.split_data_via_instructions(all_dataset_names)
             else:
                 # Split via lipid species into folds for cross-validation
-                (
-                    trainsets,
-                    valsets,
-                    trainset_lipids,
-                    valset_lipids,
-                ) = self.split_data_by_lipid_species(all_dataset_names)
+                return self.split_data_by_lipid_species(all_dataset_names)
 
-        return trainsets, valsets, trainset_lipids, valset_lipids
+        return DataSplit(
+            trainsets=trainsets,
+            valsets=valsets,
+            trainset_lipids=trainset_lipids,
+            valset_lipids=valset_lipids,
+        )
 
-    def split_data_via_instructions(self, dataset_names):
+    def split_data_via_instructions(self, dataset_names: list[str]) -> DataSplit:
         trainset_names = []
         valset_names = []
 
@@ -527,9 +548,14 @@ class Trainer:
         trainset_lipids = self.get_unique_lipids(trainset_names)
         valset_lipids = self.get_unique_lipids(valset_names)
 
-        return [trainset], [valset], [trainset_lipids], [valset_lipids]
+        return DataSplit(
+            trainsets=[trainset],
+            valsets=[valset],
+            trainset_lipids=[trainset_lipids],
+            valset_lipids=[valset_lipids],
+        )
 
-    def split_data_by_lipid_species(self, dataset_names):
+    def split_data_by_lipid_species(self, dataset_names: list[str]) -> DataSplit:
         """Sorts the data by lipid type, mode and collision energy so the training and validation sets generated
         during the splitting can be balanced.
         """
@@ -582,9 +608,14 @@ class Trainer:
             valset_lipids = self.get_unique_lipids(fold)
             valsets_lipids.append(valset_lipids)
 
-        return trainsets, valsets, trainsets_lipids, valsets_lipids
+        return DataSplit(
+            trainsets=trainsets,
+            valsets=valsets,
+            trainset_lipids=trainsets_lipids,
+            valset_lipids=valsets_lipids,
+        )
 
-    def run_random_forest(self):
+    def run_random_forest(self) -> None:
         random_forest = RandomForest(self.config)
         random_forest.run()
 
@@ -592,14 +623,14 @@ class Trainer:
 
 
 class ModifiedASHAScheduler(ASHAScheduler):
-    def on_trial_add(self, trial_runner, trial: Trial):
+    def on_trial_add(self, trial_runner: Any, trial: Trial) -> None:
         trial_id = int(str(trial).split("_")[-1])
         trial.config["trial_id"] = trial_id
         super().on_trial_add(trial_runner, trial)
 
 
 class PrintingCallbacks(Callback):
-    def on_train_epoch_start(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
+    def on_train_epoch_start(self, trainer: pl.Trainer, pl_module: pl.LightningModule) -> None:
         scheduler = pl_module.lr_schedulers()
         if scheduler is not None and hasattr(scheduler, "get_last_lr"):
             print(f"\tLearning rate: {scheduler.get_last_lr()[0]}")
@@ -608,12 +639,12 @@ class PrintingCallbacks(Callback):
 class CustomLoggerCallback(LoggerCallback):
     """Custom logger interface"""
 
-    def __init__(self, output_folder):
+    def __init__(self, output_folder: str) -> None:
         self.output_folder = output_folder
 
-    def on_trial_complete(self, iteration, trials, trial, **info):
+    def on_trial_complete(self, iteration: int, trials: Any, trial: Trial, **info: Any) -> None:
         print(f"Trial {trial} successfully completed.")
         csv_metrics_file = f"{trial.logdir}/csv_logger/metrics.csv"
         metrics = pd.read_csv(csv_metrics_file)
         trial_id = int(trial.trial_id.split("_")[-1])
-        generate_plots(metrics, trial_id, self.output_folder, trial.evaluated_params)
+        generate_plots(metrics, trial_id, self.output_folder, str(trial.evaluated_params))
