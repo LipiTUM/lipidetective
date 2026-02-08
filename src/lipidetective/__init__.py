@@ -5,7 +5,9 @@ A PyTorch-based framework using transformer architecture to identify molecular
 lipid species from tandem mass spectrometry data.
 """
 
-__version__ = "0.2.0"
+from importlib.metadata import version
+
+__version__ = version("lipidetective")
 __author__ = "Vivian Wuerf, Nikolai Koehler, Florian Molnar, Lisa Hahnefeld, Robert Gurke, Michael Witting, Josch K. Pauling"
 __license__ = "BSD-3-Clause"
 __url__ = "https://github.com/LipiTUM/lipidetective"
