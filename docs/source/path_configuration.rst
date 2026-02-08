@@ -72,7 +72,7 @@ The path resolution functions can be used directly in Python:
 
 .. code-block:: python
 
-    from lipidetective.helpers.paths import (
+    from lipidetective import (
         get_project_root,
         resolve_config_path,
         resolve_data_path,
