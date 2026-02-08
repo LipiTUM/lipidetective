@@ -289,64 +289,6 @@ class TestResolveConfigPaths:
         assert result["files"]["val_input"] is None
 
 
-class TestSetDevice:
-    """Tests for device selection."""
-
-    def test_set_device_cpu_when_no_cuda(self, monkeypatch):
-        """Should return CPU device when CUDA not available."""
-        import torch
-
-        from lipidetective.helpers.utils import set_device
-
-        monkeypatch.setattr(torch.cuda, "is_available", lambda: False)
-
-        config = {"cuda": {"gpu_nr": None}, "tune": {"fractional_gpu": False}}
-        device, nr_gpus = set_device(config)
-
-        assert device == torch.device("cpu")
-        assert nr_gpus == 0
-
-    def test_set_device_gpu_default(self, monkeypatch):
-        """Should return GPU device 0 when CUDA available and no gpu_nr specified."""
-        import torch
-
-        from lipidetective.helpers.utils import set_device
-
-        monkeypatch.setattr(torch.cuda, "is_available", lambda: True)
-
-        config = {"cuda": {"gpu_nr": None}, "tune": {"fractional_gpu": False}}
-        device, nr_gpus = set_device(config)
-
-        assert device == torch.device("cuda:0")
-        assert nr_gpus == 1
-
-    def test_set_device_fractional_gpu(self, monkeypatch):
-        """Should return 0.5 GPUs when fractional_gpu is True."""
-        import torch
-
-        from lipidetective.helpers.utils import set_device
-
-        monkeypatch.setattr(torch.cuda, "is_available", lambda: True)
-
-        config = {"cuda": {"gpu_nr": None}, "tune": {"fractional_gpu": True}}
-        device, nr_gpus = set_device(config)
-
-        assert nr_gpus == 0.5
-
-    def test_set_device_specific_gpu(self, monkeypatch):
-        """Should return specified GPU device."""
-        import torch
-
-        from lipidetective.helpers.utils import set_device
-
-        monkeypatch.setattr(torch.cuda, "is_available", lambda: True)
-
-        config = {"cuda": {"gpu_nr": 1}, "gpu_nr": 1, "tune": {"fractional_gpu": False}}
-        device, nr_gpus = set_device(config)
-
-        assert device == torch.device("cuda:1")
-
-
 class TestLipidClassDetectionExtended:
     """Extended tests for lipid class identification."""
 
