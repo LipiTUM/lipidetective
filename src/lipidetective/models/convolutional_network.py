@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 import math
+from typing import Any
 
 import numpy as np
 import torch
@@ -7,7 +10,7 @@ import torch.nn.functional as F
 
 
 class ConvolutionalNetwork(nn.Module):
-    def __init__(self, config: dict):
+    def __init__(self, config: dict[str, Any]) -> None:
         super().__init__()
         # +1 to peak input size for additional features of precursor mass and polarity
         if config["input_embedding"]["type"] == "peaks":

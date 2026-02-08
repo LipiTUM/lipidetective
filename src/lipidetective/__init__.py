@@ -5,6 +5,8 @@ A PyTorch-based framework using transformer architecture to identify molecular
 lipid species from tandem mass spectrometry data.
 """
 
+from __future__ import annotations
+
 from importlib.metadata import version
 
 __version__ = version("lipidetective")

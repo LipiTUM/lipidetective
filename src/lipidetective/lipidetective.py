@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 
 import ray
@@ -11,7 +13,7 @@ from lipidetective.helpers.utils import (
 from lipidetective.workflow.trainer import Trainer
 
 
-def main():
+def main() -> None:
     # 1. PREPARATION
     # Logging configuration
     logging.basicConfig(

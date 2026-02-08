@@ -1,4 +1,8 @@
+from __future__ import annotations
+
 import json
+from pathlib import Path
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -9,18 +13,18 @@ from torch.utils.data import Dataset
 from lipidetective.helpers.utils import truncate
 
 
-class PredictionDataset(Dataset):
-    def __init__(self, file_path, config):
-        self.file_name = file_path.split("/")[-1]
-        self.file_path = file_path
-        self.config = config
-        self.file = self.process_input()
-        self.dataset_len = len(self.file)
+class PredictionDataset(Dataset[dict[str, Any]]):
+    def __init__(self, file_path: str, config: dict[str, Any]) -> None:
+        self.file_name: str = Path(file_path).name
+        self.file_path: str = file_path
+        self.config: dict[str, Any] = config
+        self.file: list[dict[str, Any]] = self.process_input()
+        self.dataset_len: int = len(self.file)
 
     def __len__(self) -> int:
         return int(self.dataset_len)
 
-    def __getitem__(self, index: int) -> dict:
+    def __getitem__(self, index: int) -> dict[str, Any]:
         sample = self.file[index]
         features = self.get_n_highest_peaks(sample["mz"], sample["intensity"], sample["precursor"])
         spectrum_info = {
@@ -32,7 +36,7 @@ class PredictionDataset(Dataset):
 
         return {"features": features, "info": spectrum_info}
 
-    def process_input(self):
+    def process_input(self) -> list[dict[str, Any]]:
         if self.file_path.endswith(".mzML"):
             return self.process_mzml()
         elif self.file_path.endswith(".json"):
@@ -40,25 +44,25 @@ class PredictionDataset(Dataset):
         else:
             raise ValueError(f"Unsupported format. Expected .mzML or .json, got: {self.file_path}")
 
-    def process_mzml(self):
+    def process_mzml(self) -> list[dict[str, Any]]:
         spectra = list(mzml.read(self.file_path))
-        ms2_spectra = []
+        ms2_spectra: list[dict[str, Any]] = []
         for spectrum in spectra:
             if spectrum["ms level"] == 2:
-                spectrum_id = spectrum["index"]
-                precursor = float(
+                spectrum_id: int = spectrum["index"]
+                precursor: float = float(
                     spectrum["precursorList"]["precursor"][0]["selectedIonList"]["selectedIon"][0][
                         "selected ion m/z"
                     ]
                 )
-                mz_array = spectrum["m/z array"]
-                intensity_array = spectrum["intensity array"]
-                polarity = (
+                mz_array: np.ndarray = spectrum["m/z array"]
+                intensity_array: np.ndarray = spectrum["intensity array"]
+                polarity: str | None = (
                     "+"
                     if "positive scan" in spectrum
                     else ("-" if "negative scan" in spectrum else None)
                 )
-                spectrum_entry = {
+                spectrum_entry: dict[str, Any] = {
                     "index": spectrum_id,
                     "precursor": precursor,
                     "mz": mz_array,
@@ -68,12 +72,14 @@ class PredictionDataset(Dataset):
                 ms2_spectra.append(spectrum_entry)
         return ms2_spectra
 
-    def process_json(self):
+    def process_json(self) -> list[dict[str, Any]]:
         with open(self.file_path) as file:
-            spectra = json.load(file)
+            spectra: list[dict[str, Any]] = json.load(file)
         return spectra
 
-    def get_n_highest_peaks(self, mz_array, intensity_array, precursor):
+    def get_n_highest_peaks(
+        self, mz_array: np.ndarray, intensity_array: np.ndarray, precursor: float
+    ) -> torch.Tensor:
         n_peaks = self.config["input_embedding"]["n_peaks"]
         decimal_accuracy = self.config["input_embedding"]["decimal_accuracy"]
 

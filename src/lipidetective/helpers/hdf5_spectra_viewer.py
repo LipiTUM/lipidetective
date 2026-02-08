@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 import argparse
+from typing import Any
 
 import h5py
 import holoviews as hv
@@ -9,7 +12,7 @@ hv.extension("bokeh")
 
 
 class SpectraViewer:
-    def __init__(self, hdf5_file_path):
+    def __init__(self, hdf5_file_path: str) -> None:
         pn.state.on_session_created(self.created)
 
         self.hdf5_file_path = hdf5_file_path
@@ -55,15 +58,15 @@ class SpectraViewer:
             selector.name = f"selector_{idx + 1}"
             selector.param.watch(self.change_group_selection, "value")
 
-    def created(self, session_context):
+    def created(self, session_context: Any) -> None:
         print("SpectraViewer session created.")
 
-    def destroyed(self, session_context):
+    def destroyed(self, session_context: Any) -> None:
         print("SpectraViewer session destroyed.")
         self.experiment.close()
         self.app.stop()
 
-    def main_app(self):
+    def main_app(self) -> Any:
         pn.state.on_session_destroyed(self.destroyed)
         print(self.hdf5_file_path)
 
@@ -74,7 +77,7 @@ class SpectraViewer:
 
         return pn.Column(title, select)
 
-    def add_group_selection(self, group, level_nr):
+    def add_group_selection(self, group: h5py.Group | h5py.Dataset, level_nr: int) -> None:
         if isinstance(group, h5py.Group):
             group_names = list(group.keys())
             first_value = list(group.values())[0]
@@ -112,7 +115,7 @@ class SpectraViewer:
                     for selector in self.selection_column[level_nr:]:
                         self.selection_column.remove(selector)
 
-    def change_group_selection(self, event):
+    def change_group_selection(self, event: Any) -> None:
         group_index = int(event.obj.name.split("_")[1])
         group_path = "/".join([column.value for column in self.selection_column[:group_index]])
 
@@ -123,7 +126,7 @@ class SpectraViewer:
         self.spectrum_info.value = self.update_spectrum_info()
         self.folder_info.object = self.update_folder_info()
 
-    def plot_spectrum(self):
+    def plot_spectrum(self) -> Any:
         spectrum = self.experiment[self.current_dataset_path]
         mz, intensity = spectrum
 
@@ -132,7 +135,7 @@ class SpectraViewer:
 
         return spikes
 
-    def update_spectrum_info(self):
+    def update_spectrum_info(self) -> pd.DataFrame:
         spectrum = self.experiment[self.current_dataset_path]
         attribute_dict = dict(spectrum.attrs.items())
         attribute_df = pd.DataFrame(
@@ -140,11 +143,11 @@ class SpectraViewer:
         )
         return attribute_df.T
 
-    def update_folder_info(self):
+    def update_folder_info(self) -> str:
         options_len = len(self.selection_column[-1].options)  # type: ignore[union-attr]
         return f"\\# of spectra in this group: **{options_len}**"
 
-    def close_app(self, event):
+    def close_app(self, event: Any) -> None:
         self.experiment.close()
         self.app.stop()
 

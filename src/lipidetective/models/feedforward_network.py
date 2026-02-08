@@ -1,3 +1,7 @@
+from __future__ import annotations
+
+from typing import Any
+
 import numpy as np
 import torch
 import torch.nn as nn
@@ -5,7 +9,7 @@ import torch.nn.functional as F
 
 
 class FeedForwardNetwork(nn.Module):
-    def __init__(self, config: dict):
+    def __init__(self, config: dict[str, Any]) -> None:
         super().__init__()
         # +1 to peak input size for additional features of precursor mass and polarity
         if config["input_embedding"]["type"] == "peaks":
@@ -26,7 +30,7 @@ class FeedForwardNetwork(nn.Module):
         self.fc3 = nn.Linear(self.layer_2, self.layer_3)
         self.fc4 = nn.Linear(self.layer_3, 3)
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = F.relu(self.fc1(x))
 
         # Flatten separate vectors for intensity & m/z

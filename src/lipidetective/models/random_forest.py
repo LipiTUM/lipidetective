@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import argparse
 import logging
 import os
@@ -14,8 +16,8 @@ from lipidetective.helpers.utils import read_yaml
 
 
 class RandomForest:
-    def __init__(self, config: dict):
-        self.config = config
+    def __init__(self, config: dict[str, Any]) -> None:
+        self.config: dict[str, Any] = config
         current_working_dir = os.getcwd()
         self.lipid_species_reference = read_yaml(
             os.path.join(current_working_dir, "lipid_info/molecular_lipid_species.yaml")
@@ -36,18 +38,20 @@ class RandomForest:
             zip(self.lipid_species_indices, self.lipid_species, strict=True)
         )
 
-    def run(self):
+    def run(self) -> None:
         train_features, train_labels, test_features, test_labels = self.prepare_data()
 
         # Separate test labels for different models
-        test_labels_lipid_names = [row[0] for row in test_labels]
-        test_labels_lipid_components = [row[1:4] for row in test_labels]
-        test_labels_lipid_masses = [row[4:] for row in test_labels]
+        test_labels_lipid_names = [row[0] for row in test_labels]  # type: ignore[union-attr]
+        test_labels_lipid_components = [row[1:4] for row in test_labels]  # type: ignore[union-attr]
+        test_labels_lipid_masses = [row[4:] for row in test_labels]  # type: ignore[union-attr]
 
         if self.config["random_forest"]["type"] == "single_classifier":
             # Single classifier prediction
             single_classifier_predictions, single_classifier = self.use_single_classifier(
-                train_features, train_labels, test_features
+                train_features,  # type: ignore[arg-type]
+                train_labels,  # type: ignore[arg-type]
+                test_features,  # type: ignore[arg-type]
             )
             prediction_statistics_single = self.calculate_accuracy(
                 single_classifier_predictions,
@@ -68,7 +72,7 @@ class RandomForest:
                 triple_classifier_hg,
                 triple_classifier_fa1,
                 triple_classifier_fa2,
-            ) = self.use_triple_classifier(train_features, train_labels, test_features)
+            ) = self.use_triple_classifier(train_features, train_labels, test_features)  # type: ignore[arg-type]
             prediction_statistics_triple = self.calculate_accuracy(
                 triple_classifier_predictions,
                 test_labels_lipid_components,
@@ -96,7 +100,7 @@ class RandomForest:
                 triple_regressor_hg,
                 triple_regressor_fa1,
                 triple_regressor_fa2,
-            ) = self.use_triple_regressor(train_features, train_labels, test_features)
+            ) = self.use_triple_regressor(train_features, train_labels, test_features)  # type: ignore[arg-type]
             prediction_statistics_triple_mass = self.calculate_accuracy(
                 triple_regressor_predictions,
                 test_labels_lipid_masses,
@@ -115,7 +119,7 @@ class RandomForest:
 
             self.write_output_to_file({"triple_regressor": prediction_statistics_triple_mass})
 
-    def get_spectrum_data(self, spectrum):
+    def get_spectrum_data(self, spectrum: h5py.Dataset) -> list[Any]:
         mz, intensity = spectrum
         mz = list(mz)
         intensity = list(intensity)
@@ -149,7 +153,9 @@ class RandomForest:
 
         return data_array
 
-    def use_single_classifier(self, train_features, train_labels, test_features):
+    def use_single_classifier(
+        self, train_features: list[Any], train_labels: list[Any], test_features: list[Any]
+    ) -> tuple[Any, RandomForestClassifier]:
         classifier = RandomForestClassifier()
 
         train_labels_lipid_names = [row[0] for row in train_labels]
@@ -158,13 +164,17 @@ class RandomForest:
 
         return classifier.predict(test_features), classifier
 
-    def plot_decision_tree(self, decision_tree, name_file):
+    def plot_decision_tree(self, decision_tree: Any, name_file: str) -> None:
         cn = self.lipid_species
         fig, axes = plt.subplots(nrows=1, ncols=1, figsize=(10, 10), dpi=300)
         tree.plot_tree(decision_tree, class_names=cn, filled=True, rounded=True, max_depth=3)
         fig.savefig(os.path.join(self.config["files"]["output"], name_file))
 
-    def use_triple_classifier(self, train_features, train_labels, test_features):
+    def use_triple_classifier(
+        self, train_features: list[Any], train_labels: list[Any], test_features: list[Any]
+    ) -> tuple[
+        list[list[Any]], RandomForestClassifier, RandomForestClassifier, RandomForestClassifier
+    ]:
         train_labels_headgroup = [row[1] for row in train_labels]
         train_labels_fa1 = [row[2] for row in train_labels]
         train_labels_fa2 = [row[3] for row in train_labels]
@@ -193,7 +203,11 @@ class RandomForest:
 
         return prediction_output, classifier_hg, classifier_fa1, classifier_fa2
 
-    def use_triple_regressor(self, train_features, train_labels, test_features):
+    def use_triple_regressor(
+        self, train_features: list[Any], train_labels: list[Any], test_features: list[Any]
+    ) -> tuple[
+        list[list[Any]], RandomForestRegressor, RandomForestRegressor, RandomForestRegressor
+    ]:
         train_labels_headgroup_mass = [row[4] for row in train_labels]
         train_labels_fa1_mass = [row[5] for row in train_labels]
         train_labels_fa2_mass = [row[6] for row in train_labels]
@@ -222,7 +236,7 @@ class RandomForest:
 
         return prediction_output, regressor_hg, regressor_fa1, regressor_fa2
 
-    def calculate_accuracy(self, prediction, labels, model, task):
+    def calculate_accuracy(self, prediction: Any, labels: list[Any], model: str, task: str) -> str:
         prediction_comparison = list(zip(prediction, labels, strict=True))
         prediction_evaluation = []
         label_count: dict[Any, int] = {}
@@ -273,11 +287,11 @@ class RandomForest:
 
         return prediction_statistics
 
-    def check_classification_accuracy(self, prediction, label):
+    def check_classification_accuracy(self, prediction: object, label: object) -> bool:
         return prediction == label
 
-    def check_regression_accuracy(self, prediction, label):
-        checks = []
+    def check_regression_accuracy(self, prediction: Any, label: Any) -> bool:
+        checks: list[bool] = []
 
         for item in list(zip(prediction, label, strict=True)):
             difference = abs(item[0] - item[1])
@@ -288,7 +302,7 @@ class RandomForest:
 
         return all(checks)
 
-    def write_output_to_file(self, statistics):
+    def write_output_to_file(self, statistics: dict[str, str]) -> None:
         for model, statistic in statistics.items():
             with open(
                 os.path.join(
@@ -298,7 +312,13 @@ class RandomForest:
             ) as file:
                 file.write(statistic)
 
-    def extract_info_dataset(self, group, val_lipids, train_set, test_set):
+    def extract_info_dataset(
+        self,
+        group: h5py.Group | h5py.Dataset,
+        val_lipids: list[str],
+        train_set: list[Any],
+        test_set: list[Any],
+    ) -> None:
         if isinstance(group, h5py.Group):
             for _key, value in group.items():
                 self.extract_info_dataset(value, val_lipids, train_set, test_set)
@@ -310,7 +330,9 @@ class RandomForest:
             else:
                 train_set.append(data_array)
 
-    def extract_info_dataset_no_split(self, group, dataset):
+    def extract_info_dataset_no_split(
+        self, group: h5py.Group | h5py.Dataset, dataset: list[Any]
+    ) -> None:
         if isinstance(group, h5py.Group):
             for _key, value in group.items():
                 self.extract_info_dataset_no_split(value, dataset)
@@ -318,14 +340,16 @@ class RandomForest:
             data_array = self.get_spectrum_data(group)
             dataset.append(data_array)
 
-    def extract_features_and_labels(self, dataset):
-        dataset = shuffle(dataset, random_state=0)
-        features = [row[0] for row in dataset]
-        labels = [row[1:] for row in dataset]
+    def extract_features_and_labels(self, dataset: list[Any]) -> tuple[Any, Any]:
+        shuffled_dataset: Any = shuffle(dataset, random_state=0)
+        features = [row[0] for row in shuffled_dataset]
+        labels = [row[1:] for row in shuffled_dataset]
 
         return features, labels
 
-    def prepare_data(self):
+    def prepare_data(
+        self,
+    ) -> tuple[list[Any] | None, list[Any] | None, list[Any] | None, list[Any] | None]:
         dataset_file = h5py.File(self.config["files"]["train_input"], "r")
 
         if self.config["files"]["splitting_instructions"]:
@@ -363,7 +387,7 @@ class RandomForest:
         return train_features, train_labels, test_features, test_labels
 
 
-def get_config():
+def get_config() -> Any:
     parser = argparse.ArgumentParser()
     parser.add_argument("-c", "--config", type=str, required=True)
     arguments = parser.parse_args()

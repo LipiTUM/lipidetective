@@ -43,6 +43,3 @@ jobs:
 
       - name: Run Mypy type checking
         run: uv run mypy src/
-        continue-on-error: true
-        # continue-on-error allows CI to pass while type coverage improves
-        # Remove once type hints are added throughout the codebase

@@ -1,9 +1,12 @@
+from __future__ import annotations
+
 import argparse
 import logging
 import math
 import os
 import random
 import traceback
+from typing import Any
 
 import numpy as np
 import torch
@@ -18,7 +21,7 @@ from lipidetective.helpers.paths import (
 )
 
 
-def resolve_config_paths(config: dict) -> dict:
+def resolve_config_paths(config: dict[str, Any]) -> dict[str, Any]:
     """Resolve all file paths in a configuration dictionary.
 
     Paths can be:
@@ -68,7 +71,7 @@ def resolve_config_paths(config: dict) -> dict:
     return resolved
 
 
-def parse_config():
+def parse_config() -> tuple[Any, argparse.Namespace]:
     parser = argparse.ArgumentParser(
         description="This script generates a deep learning model for lipid mass spectra."
     )
@@ -83,16 +86,17 @@ def parse_config():
     return read_yaml(arguments.config), arguments
 
 
-def read_yaml(file_to_open: str):
+def read_yaml(file_to_open: str) -> Any:
     try:
         with open(file_to_open) as file:
             loaded_file = yaml.safe_load(file)
         return loaded_file
     except Exception:
         traceback.print_exc()
+        return None
 
 
-def write_yaml(file_to_open, dict_to_write):
+def write_yaml(file_to_open: str, dict_to_write: dict[str, Any]) -> None:
     try:
         with open(file_to_open, "w") as file:
             yaml.dump(dict_to_write, file)
@@ -100,7 +104,7 @@ def write_yaml(file_to_open, dict_to_write):
         traceback.print_exc()
 
 
-def set_device(config):
+def set_device(config: dict[str, Any]) -> tuple[torch.device, int | float]:
     if torch.cuda.is_available():
         if config["cuda"]["gpu_nr"] is None:
             device = torch.device("cuda:{GPU}".format(GPU="0"))
@@ -141,19 +145,19 @@ def set_seeds(seed: int = 42) -> None:
     logging.info(f"Random seed set as {seed}")
 
 
-def is_main_process():
+def is_main_process() -> bool:
     """This function is only necessary when running LipiDetective using tune and makes sure that certain processes
     are only performed once per run.
     """
     return "LOCAL_RANK" not in os.environ.keys() and "NODE_RANK" not in os.environ.keys()
 
 
-def truncate(values: np.ndarray, decimal_places=0):
+def truncate(values: np.ndarray, decimal_places: int = 0) -> list[float]:
     factor = 10**decimal_places
     return [(math.floor(x * factor) / factor) for x in values]
 
 
-def is_lipid_class_with_slash(lipid_name):
+def is_lipid_class_with_slash(lipid_name: str) -> bool:
     return lipid_name.startswith(
         (
             "Cer",
