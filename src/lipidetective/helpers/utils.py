@@ -104,7 +104,6 @@ def write_yaml(file_to_open: str, dict_to_write: dict[str, Any]) -> None:
         traceback.print_exc()
 
 
-
 def set_seeds(seed: int = 42) -> None:
     torch.set_float32_matmul_precision("high")
 
