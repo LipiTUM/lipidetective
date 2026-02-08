@@ -30,7 +30,7 @@ install:
 
 install-dev:
 	@echo "Installing development dependencies..."
-	uv sync --all-extras
+	uv sync --all-groups
 
 # Linting (auto-fix)
 lint:
