@@ -64,9 +64,11 @@ class H5Dataset(Dataset[dict[str, Any]]):
         if self.network_type == "transformer":
             # Extract only sorted m/z values as we don't need the intensities for the transformer input
             mz_values = peaks[:, 0]
-            features = torch.IntTensor(mz_values * (10**self.decimal_accuracy))
+            features = torch.IntTensor(np.rint(mz_values * (10**self.decimal_accuracy)))
 
-            precursor_mz = int(float(sample.attrs["precursor"]) * (10**self.decimal_accuracy))
+            precursor_mz = int(
+                round(float(sample.attrs["precursor"]) * (10**self.decimal_accuracy))
+            )
 
             if precursor_mz not in features:
                 features[-1] = precursor_mz

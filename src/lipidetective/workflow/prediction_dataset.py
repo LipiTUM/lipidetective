@@ -106,9 +106,9 @@ class PredictionDataset(Dataset[dict[str, Any]]):
 
         spectrum_peaks = sorted_spectrum[:n_peaks]
         mz_values = spectrum_peaks[:, 0]
-        features = torch.IntTensor(mz_values * (10**decimal_accuracy))
+        features = torch.IntTensor(np.rint(mz_values * (10**decimal_accuracy)))
 
-        precursor_mz = int(float(precursor) * (10**decimal_accuracy))
+        precursor_mz = int(round(float(precursor) * (10**decimal_accuracy)))
 
         if precursor_mz not in features:
             features[-1] = precursor_mz
