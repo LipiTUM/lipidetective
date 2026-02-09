@@ -6,6 +6,7 @@ import math
 import os
 import random
 import traceback
+from pathlib import Path
 from typing import Any
 
 import numpy as np
@@ -49,24 +50,32 @@ def resolve_config_paths(config: dict[str, Any]) -> dict[str, Any]:
             path = files[key]
             if not is_absolute_path(path):
                 files[key] = str(resolve_data_path(path))
+            else:
+                files[key] = str(Path(path).expanduser().resolve())
 
     # Model paths
     if "saved_model" in files and files["saved_model"]:
         path = files["saved_model"]
         if not is_absolute_path(path):
             files["saved_model"] = str(resolve_model_path(path))
+        else:
+            files["saved_model"] = str(Path(path).expanduser().resolve())
 
     # Output paths
     if "output" in files and files["output"]:
         path = files["output"]
         if not is_absolute_path(path):
             files["output"] = str(resolve_output_path(path))
+        else:
+            files["output"] = str(Path(path).expanduser().resolve())
 
     # Splitting instructions (config path)
     if "splitting_instructions" in files and files["splitting_instructions"]:
         path = files["splitting_instructions"]
         if not is_absolute_path(path):
             files["splitting_instructions"] = str(resolve_config_path(path))
+        else:
+            files["splitting_instructions"] = str(Path(path).expanduser().resolve())
 
     return resolved
 

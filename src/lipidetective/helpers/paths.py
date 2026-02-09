@@ -27,7 +27,8 @@ def get_project_root() -> Path:
             return parent
     raise FileNotFoundError(
         "Could not find project root (no pyproject.toml found). "
-        "Set LIPIDETECTIVE_DATA_DIR and LIPIDETECTIVE_MODELS_DIR "
+        "Set LIPIDETECTIVE_DATA_DIR, LIPIDETECTIVE_MODELS_DIR, "
+        "LIPIDETECTIVE_OUTPUT_DIR, and/or LIPIDETECTIVE_CONFIG_DIR "
         "environment variables to specify paths explicitly."
     )
 
@@ -84,8 +85,18 @@ def resolve_config_path(relative_path: str | Path) -> Path:
 
     Returns:
         Absolute path to config file.
+
+    Environment variables:
+        LIPIDETECTIVE_CONFIG_DIR: Override default config directory.
     """
-    return (get_project_root() / "config" / relative_path).resolve()
+    config_dir = os.getenv("LIPIDETECTIVE_CONFIG_DIR")
+
+    if config_dir:
+        base = Path(config_dir)
+    else:
+        base = get_project_root() / "config"
+
+    return (base / relative_path).resolve()
 
 
 def resolve_output_path(relative_path: str | Path) -> Path:
