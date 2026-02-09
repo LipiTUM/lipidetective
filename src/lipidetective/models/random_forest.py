@@ -43,16 +43,16 @@ class RandomForest:
         train_features, train_labels, test_features, test_labels = self.prepare_data()
 
         # Separate test labels for different models
-        test_labels_lipid_names = [row[0] for row in test_labels]  # type: ignore[union-attr]
-        test_labels_lipid_components = [row[1:4] for row in test_labels]  # type: ignore[union-attr]
-        test_labels_lipid_masses = [row[4:] for row in test_labels]  # type: ignore[union-attr]
+        test_labels_lipid_names = [row[0] for row in test_labels]
+        test_labels_lipid_components = [row[1:4] for row in test_labels]
+        test_labels_lipid_masses = [row[4:] for row in test_labels]
 
         if self.config["random_forest"]["type"] == "single_classifier":
             # Single classifier prediction
             single_classifier_predictions, single_classifier = self.use_single_classifier(
-                train_features,  # type: ignore[arg-type]
-                train_labels,  # type: ignore[arg-type]
-                test_features,  # type: ignore[arg-type]
+                train_features,
+                train_labels,
+                test_features,
             )
             prediction_statistics_single = self.calculate_accuracy(
                 single_classifier_predictions,
@@ -73,7 +73,7 @@ class RandomForest:
                 triple_classifier_hg,
                 triple_classifier_fa1,
                 triple_classifier_fa2,
-            ) = self.use_triple_classifier(train_features, train_labels, test_features)  # type: ignore[arg-type]
+            ) = self.use_triple_classifier(train_features, train_labels, test_features)
             prediction_statistics_triple = self.calculate_accuracy(
                 triple_classifier_predictions,
                 test_labels_lipid_components,
@@ -101,7 +101,7 @@ class RandomForest:
                 triple_regressor_hg,
                 triple_regressor_fa1,
                 triple_regressor_fa2,
-            ) = self.use_triple_regressor(train_features, train_labels, test_features)  # type: ignore[arg-type]
+            ) = self.use_triple_regressor(train_features, train_labels, test_features)
             prediction_statistics_triple_mass = self.calculate_accuracy(
                 triple_regressor_predictions,
                 test_labels_lipid_masses,
@@ -350,7 +350,7 @@ class RandomForest:
 
     def prepare_data(
         self,
-    ) -> tuple[list[Any] | None, list[Any] | None, list[Any] | None, list[Any] | None]:
+    ) -> tuple[list[Any], list[Any], list[Any], list[Any]]:
         dataset_file = h5py.File(self.config["files"]["train_input"], "r")
 
         if self.config["files"]["splitting_instructions"]:
@@ -377,11 +377,10 @@ class RandomForest:
                 train_features, train_labels = self.extract_features_and_labels(train_set)
                 test_features, test_labels = self.extract_features_and_labels(test_set)
         else:
-            # TODO: implement random lipid species split
-            train_features = None
-            train_labels = None
-            test_features = None
-            test_labels = None
+            raise NotImplementedError(
+                "Random lipid species split is not yet implemented. "
+                "Please provide 'splitting_instructions' in the config."
+            )
 
         dataset_file.close()
 
