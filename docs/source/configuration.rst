@@ -104,6 +104,8 @@ Override default base directories using environment variables:
      - Base directory for model files
    * - ``LIPIDETECTIVE_OUTPUT_DIR``
      - Base directory for experiment outputs
+   * - ``LIPIDETECTIVE_CONFIG_DIR``
+     - Base directory for config files (e.g. splitting instructions)
 
 Example:
 
