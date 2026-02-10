@@ -69,13 +69,15 @@ def resolve_config_paths(config: dict[str, Any]) -> dict[str, Any]:
         else:
             files["output"] = str(Path(path).expanduser().resolve())
 
-    # Splitting instructions (config path)
+    # Splitting instructions (config path or sentinel value like "leakage")
+    splitting_sentinels = {"leakage"}
     if "splitting_instructions" in files and files["splitting_instructions"]:
         path = files["splitting_instructions"]
-        if not is_absolute_path(path):
-            files["splitting_instructions"] = str(resolve_config_path(path))
-        else:
-            files["splitting_instructions"] = str(Path(path).expanduser().resolve())
+        if path not in splitting_sentinels:
+            if not is_absolute_path(path):
+                files["splitting_instructions"] = str(resolve_config_path(path))
+            else:
+                files["splitting_instructions"] = str(Path(path).expanduser().resolve())
 
     return resolved
 
