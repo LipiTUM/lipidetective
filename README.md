@@ -1,6 +1,10 @@
 # LipiDetective
 
-**LipiDetective** is a deep learning framework designed for the identification of molecular lipid species from tandem 
+[![Lint](https://github.com/LipiTUM/lipidetective/actions/workflows/lint.yml/badge.svg)](https://github.com/LipiTUM/lipidetective/actions/workflows/lint.yml)
+[![Tests](https://github.com/LipiTUM/lipidetective/actions/workflows/test.yml/badge.svg)](https://github.com/LipiTUM/lipidetective/actions/workflows/test.yml)
+[![Documentation](https://github.com/LipiTUM/lipidetective/actions/workflows/docs.yml/badge.svg)](https://github.com/LipiTUM/lipidetective/actions/workflows/docs.yml)
+
+**LipiDetective** is a deep learning framework designed for the identification of molecular lipid species from tandem
 mass spectra.
 
 ## Features
@@ -13,28 +17,26 @@ mass spectra.
 
 ## Installation
 
-The easiest way to get started with LipiDetective is using [Poetry](https://python-poetry.org) and the provided pyproject.toml file. 
+The easiest way to get started with LipiDetective is using [uv](https://docs.astral.sh/uv/) and the provided pyproject.toml file.
 Make sure you have at least python version 3.11 installed. Follow these steps to set up the project:
 
 1. Clone the repository:
    ```bash
    git clone https://github.com/LipiTUM/lipidetective.git
    cd lipidetective
+   ```
 
 2. Install the dependencies:
    ```bash
-   poetry install
-
-3. If necessary activate the virtual environment:
-   ```bash
-   poetry shell
+   uv sync
+   ```
 
 ## Usage
 
 LipiDetective can be executed by running the following command:
 
    ```bash
-   poetry run lipidetective --config path/to/config.yaml
+   uv run lipidetective --config path/to/config.yaml
    ```
 
 Ensure that the YAML configuration file is correctly set up with the necessary parameters for the desired workflow.

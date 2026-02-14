@@ -1,32 +1,36 @@
+from __future__ import annotations
+
+from typing import Any
+
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import numpy as np
 
 
 class FeedForwardNetwork(nn.Module):
-    def __init__(self, config: dict):
+    def __init__(self, config: dict[str, Any]) -> None:
         super().__init__()
         # +1 to peak input size for additional features of precursor mass and polarity
-        if config['input_embedding']['type'] == 'peaks':
-            self.input_size = (config['input_embedding']['n_peaks'] + 1)
+        if config["input_embedding"]["type"] == "peaks":
+            self.input_size = config["input_embedding"]["n_peaks"] + 1
         else:
-            min_mz = config['input_embedding']['min_mz']
-            max_mz = config['input_embedding']['max_mz']
-            precision = config['input_embedding']['precision']
+            min_mz = config["input_embedding"]["min_mz"]
+            max_mz = config["input_embedding"]["max_mz"]
+            precision = config["input_embedding"]["precision"]
 
             self.input_size = len(np.arange(min_mz, max_mz, precision))
 
-        self.layer_1 = config['feedforward']['layer_1_size']
-        self.layer_2 = config['feedforward']['layer_2_size']
-        self.layer_3 = config['feedforward']['layer_3_size']
+        self.layer_1 = config["feedforward"]["layer_1_size"]
+        self.layer_2 = config["feedforward"]["layer_2_size"]
+        self.layer_3 = config["feedforward"]["layer_3_size"]
 
         self.fc1 = nn.Linear(self.input_size, self.layer_1)
-        self.fc2 = nn.Linear(2*self.layer_1, self.layer_2)
+        self.fc2 = nn.Linear(2 * self.layer_1, self.layer_2)
         self.fc3 = nn.Linear(self.layer_2, self.layer_3)
         self.fc4 = nn.Linear(self.layer_3, 3)
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = F.relu(self.fc1(x))
 
         # Flatten separate vectors for intensity & m/z
@@ -37,4 +41,3 @@ class FeedForwardNetwork(nn.Module):
         x = self.fc4(x)
 
         return x
-

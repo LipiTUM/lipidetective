@@ -2,14 +2,24 @@
 model: 'transformer'
 cuda:
   gpu_nr: [1]
+
+# File paths can be:
+# - Relative: resolved from project directories (data/, models/, experiments/)
+# - Absolute: used as-is
+# Override base directories with environment variables:
+#   LIPIDETECTIVE_DATA_DIR, LIPIDETECTIVE_MODELS_DIR, LIPIDETECTIVE_OUTPUT_DIR
 files:
-   train_input: '/path/to/train_dataset.hdf5'
-   val_input: '/path/to/val_dataset.hdf5'
-   test_input: '/path/to/test_dataset.hdf5'
-   predict_input: "/path/to/val_data.mzML"
-   saved_model: "/path/to/saved/lipidetective_model.pth"
-   output: '/path/to/output/folder'
-   splitting_instructions: '/path/to/validation_splits/train_val_split.yaml'
+   # Relative to data/ or $LIPIDETECTIVE_DATA_DIR
+   train_input: 'processed/train_dataset.hdf5'
+   val_input: 'processed/val_dataset.hdf5'
+   test_input: 'processed/test_dataset.hdf5'
+   predict_input: 'raw/sample.mzML'
+   # Relative to models/ or $LIPIDETECTIVE_MODELS_DIR
+   saved_model: 'lipidetective_model.pth'
+   # Relative to experiments/ or $LIPIDETECTIVE_OUTPUT_DIR
+   output: 'output'
+   # Relative to config/
+   splitting_instructions: 'validation_splits/train_val_split.yaml'
 workflow:
   train: False
   validate: False

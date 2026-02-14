@@ -1,4 +1,8 @@
+from __future__ import annotations
+
 import math
+from typing import Any
+
 import numpy as np
 import torch
 import torch.nn as nn
@@ -6,44 +10,50 @@ import torch.nn.functional as F
 
 
 class ConvolutionalNetwork(nn.Module):
-    def __init__(self, config: dict):
-        super(ConvolutionalNetwork, self).__init__()
+    def __init__(self, config: dict[str, Any]) -> None:
+        super().__init__()
         # +1 to peak input size for additional features of precursor mass and polarity
-        if config['input_embedding']['type'] == 'peaks':
-            self.input_size = (config['input_embedding']['n_peaks'] + 1)
+        if config["input_embedding"]["type"] == "peaks":
+            self.input_size = config["input_embedding"]["n_peaks"] + 1
         else:
-            min_mz = config['input_embedding']['min_mz']
-            max_mz = config['input_embedding']['max_mz']
-            precision = config['input_embedding']['precision']
+            min_mz = config["input_embedding"]["min_mz"]
+            max_mz = config["input_embedding"]["max_mz"]
+            precision = config["input_embedding"]["precision"]
 
             self.input_size = len(np.arange(min_mz, max_mz, precision))
 
         self.config = config
 
         # Extract all relevant layer information from config file
-        self.channels_1 = config['convolutional']['channels_conv_1']
-        self.channels_2 = config['convolutional']['channels_conv_2']
-        self.channels_3 = config['convolutional']['channels_conv_3']
+        self.channels_1 = config["convolutional"]["channels_conv_1"]
+        self.channels_2 = config["convolutional"]["channels_conv_2"]
+        self.channels_3 = config["convolutional"]["channels_conv_3"]
 
-        self.kernel_1 = config['convolutional']['kernel_size_1']
-        self.kernel_2 = config['convolutional']['kernel_size_2']
-        self.kernel_3 = config['convolutional']['kernel_size_3']
+        self.kernel_1 = config["convolutional"]["kernel_size_1"]
+        self.kernel_2 = config["convolutional"]["kernel_size_2"]
+        self.kernel_3 = config["convolutional"]["kernel_size_3"]
 
-        self.stride_1 = config['convolutional']['stride_1']
-        self.stride_2 = config['convolutional']['stride_2']
-        self.stride_3 = config['convolutional']['stride_3']
+        self.stride_1 = config["convolutional"]["stride_1"]
+        self.stride_2 = config["convolutional"]["stride_2"]
+        self.stride_3 = config["convolutional"]["stride_3"]
 
-        self.lin_1 = config['convolutional']['lin_layer_1']
-        self.lin_2 = config['convolutional']['lin_layer_2']
+        self.lin_1 = config["convolutional"]["lin_layer_1"]
+        self.lin_2 = config["convolutional"]["lin_layer_2"]
 
         # Layers
-        self.conv1 = nn.Conv2d(1, self.channels_1, kernel_size=tuple(self.kernel_1), stride=self.stride_1)
-        self.conv2 = nn.Conv2d(self.channels_1, self.channels_2, kernel_size=tuple(self.kernel_2), stride=self.stride_2)
-        self.conv3 = nn.Conv2d(self.channels_2, self.channels_3, kernel_size=tuple(self.kernel_3), stride=self.stride_3)
+        self.conv1 = nn.Conv2d(
+            1, self.channels_1, kernel_size=tuple(self.kernel_1), stride=self.stride_1
+        )
+        self.conv2 = nn.Conv2d(
+            self.channels_1, self.channels_2, kernel_size=tuple(self.kernel_2), stride=self.stride_2
+        )
+        self.conv3 = nn.Conv2d(
+            self.channels_2, self.channels_3, kernel_size=tuple(self.kernel_3), stride=self.stride_3
+        )
 
         fc_1_size = self.calculate_fc1_size(self.input_size)
 
-        self.fc1 = nn.Linear(self.channels_2 * fc_1_size, self.lin_1)
+        self.fc1 = nn.Linear(self.channels_3 * fc_1_size, self.lin_1)
         self.fc2 = nn.Linear(self.lin_1, self.lin_2)
         self.fc3 = nn.Linear(self.lin_2, 3)
 
@@ -92,10 +102,10 @@ class ConvolutionalNetwork(nn.Module):
 
         """
         output_size_1 = ((len_input_spectrum - self.kernel_1[1]) / self.stride_1) + 1
-        output_size_2 = ((math.floor(output_size_1)) / 2)  # pooling 1
+        output_size_2 = (math.floor(output_size_1)) / 2  # pooling 1
         output_size_3 = ((math.floor(output_size_2) - self.kernel_2[1]) / self.stride_2) + 1
-        output_size_4 = ((math.floor(output_size_3)) / 2)  # pooling 2
+        output_size_4 = (math.floor(output_size_3)) / 2  # pooling 2
         output_size_5 = ((math.floor(output_size_4) - self.kernel_3[1]) / self.stride_3) + 1
-        fc1_size = ((math.floor(output_size_5)) / 2)  # pooling 3
+        fc1_size = (math.floor(output_size_5)) / 2  # pooling 3
 
         return int(fc1_size)
