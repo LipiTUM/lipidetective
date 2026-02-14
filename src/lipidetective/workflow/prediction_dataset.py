@@ -108,9 +108,15 @@ class PredictionDataset(Dataset[dict[str, Any]]):
         mz_values = spectrum_peaks[:, 0]
         features = torch.IntTensor(np.rint(mz_values * (10**decimal_accuracy)))
 
+        # Filter out peaks with m/z >= max_mz (outside embedding vocab range)
+        max_index = self.config["input_embedding"]["max_mz"] * 10**decimal_accuracy
+        features = features[features < max_index]
+        if len(features) < n_peaks:
+            features = torch.nn.functional.pad(features, (0, n_peaks - len(features)))
+
         precursor_mz = int(round(float(precursor) * (10**decimal_accuracy)))
 
-        if precursor_mz not in features:
+        if precursor_mz < max_index and precursor_mz not in features:
             features[-1] = precursor_mz
 
         return features

@@ -15,6 +15,7 @@ def prediction_config():
     return {
         "input_embedding": {
             "n_peaks": 50,
+            "max_mz": 1600,
             "decimal_accuracy": 1,
         }
     }
@@ -165,9 +166,8 @@ class TestPredictionDatasetGetNHighestPeaks:
 
     def test_selects_highest_intensity_peaks(self, sample_json_spectra, prediction_config):
         """Should select peaks with highest intensity."""
-        # Use smaller n_peaks for this test
-        config = {"input_embedding": {"n_peaks": 3, "decimal_accuracy": 1}}
-        dataset = PredictionDataset(sample_json_spectra, config)
+        prediction_config["input_embedding"]["n_peaks"] = 3
+        dataset = PredictionDataset(sample_json_spectra, prediction_config)
 
         mz_array = np.array([100.1, 200.2, 300.3, 400.4, 500.5])
         intensity_array = np.array([1000.0, 2000.0, 1500.0, 500.0, 3000.0])
@@ -182,8 +182,8 @@ class TestPredictionDatasetGetNHighestPeaks:
 
     def test_pads_when_fewer_peaks_than_n(self, sample_json_spectra, prediction_config):
         """Should pad with zeros when fewer peaks than n_peaks."""
-        config = {"input_embedding": {"n_peaks": 10, "decimal_accuracy": 1}}
-        dataset = PredictionDataset(sample_json_spectra, config)
+        prediction_config["input_embedding"]["n_peaks"] = 10
+        dataset = PredictionDataset(sample_json_spectra, prediction_config)
 
         mz_array = np.array([100.1, 200.2])
         intensity_array = np.array([1000.0, 2000.0])
@@ -198,8 +198,8 @@ class TestPredictionDatasetGetNHighestPeaks:
 
     def test_includes_precursor_if_not_present(self, sample_json_spectra, prediction_config):
         """Should add precursor m/z if not in peaks."""
-        config = {"input_embedding": {"n_peaks": 3, "decimal_accuracy": 1}}
-        dataset = PredictionDataset(sample_json_spectra, config)
+        prediction_config["input_embedding"]["n_peaks"] = 3
+        dataset = PredictionDataset(sample_json_spectra, prediction_config)
 
         mz_array = np.array([100.1, 200.2, 300.3])
         intensity_array = np.array([1000.0, 2000.0, 1500.0])
@@ -212,8 +212,9 @@ class TestPredictionDatasetGetNHighestPeaks:
 
     def test_decimal_accuracy_scaling(self, sample_json_spectra, prediction_config):
         """Should scale m/z values by decimal accuracy."""
-        config = {"input_embedding": {"n_peaks": 3, "decimal_accuracy": 2}}
-        dataset = PredictionDataset(sample_json_spectra, config)
+        prediction_config["input_embedding"]["n_peaks"] = 3
+        prediction_config["input_embedding"]["decimal_accuracy"] = 2
+        dataset = PredictionDataset(sample_json_spectra, prediction_config)
 
         mz_array = np.array([100.12, 200.25])
         intensity_array = np.array([1000.0, 2000.0])

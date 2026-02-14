@@ -66,11 +66,19 @@ class H5Dataset(Dataset[dict[str, Any]]):
             mz_values = peaks[:, 0]
             features = torch.IntTensor(np.rint(mz_values * (10**self.decimal_accuracy)))
 
+            # Filter out peaks with m/z >= max_mz (outside embedding vocab range)
+            max_index = self.config["input_embedding"]["max_mz"] * 10**self.decimal_accuracy
+            features = features[features < max_index]
+            if len(features) < self.config["input_embedding"]["n_peaks"]:
+                features = torch.nn.functional.pad(
+                    features, (0, self.config["input_embedding"]["n_peaks"] - len(features))
+                )
+
             precursor_mz = int(
                 round(float(sample.attrs["precursor"]) * (10**self.decimal_accuracy))
             )
 
-            if precursor_mz not in features:
+            if precursor_mz < max_index and precursor_mz not in features:
                 features[-1] = precursor_mz
 
             # Scale float m/z values to ints, so they can function as an index to be immediately mapped to their
