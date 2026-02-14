@@ -1,0 +1,44 @@
+cff-version: 1.2.0
+message: "If you use LipiDetective in your work, please cite it as below."
+title: "LipiDetective: A deep learning model for the identification of molecular lipid species in tandem mass spectra"
+type: software
+doi: 10.1101/2024.10.07.617094
+url: "https://github.com/LipiTUM/lipidetective"
+license: BSD-3-Clause
+authors:
+  - family-names: "Würf"
+    given-names: "Vivian"
+  - family-names: "Köhler"
+    given-names: "Nikolai"
+  - family-names: "Molnar"
+    given-names: "Florian"
+  - family-names: "Hahnefeld"
+    given-names: "Lisa"
+  - family-names: "Gurke"
+    given-names: "Robert"
+  - family-names: "Witting"
+    given-names: "Michael"
+  - family-names: "Pauling"
+    given-names: "Josch K."
+preferred-citation:
+  type: article
+  title: "LipiDetective: A deep learning model for the identification of molecular lipid species in tandem mass spectra"
+  doi: 10.1101/2024.10.07.617094
+  url: "https://doi.org/10.1101/2024.10.07.617094"
+  year: 2024
+  journal: "bioRxiv"
+  authors:
+    - family-names: "Würf"
+      given-names: "Vivian"
+    - family-names: "Köhler"
+      given-names: "Nikolai"
+    - family-names: "Molnar"
+      given-names: "Florian"
+    - family-names: "Hahnefeld"
+      given-names: "Lisa"
+    - family-names: "Gurke"
+      given-names: "Robert"
+    - family-names: "Witting"
+      given-names: "Michael"
+    - family-names: "Pauling"
+      given-names: "Josch K."
