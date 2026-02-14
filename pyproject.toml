@@ -14,6 +14,18 @@ authors = [
 license = {text = "BSD-3-Clause"}
 readme = "README.md"
 requires-python = ">=3.11"
+keywords = ["lipidomics", "mass-spectrometry", "deep-learning", "transformer", "pytorch"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: BSD License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+
 dependencies = [
     "torch>=2.3.0",
     "pytorch-lightning>=2.1.2",
@@ -44,6 +56,8 @@ dev = [
     "types-PyYAML>=6.0.0",
     "pandas-stubs>=2.3.3.260113",
     "types-seaborn>=0.13.2.20251221",
+    "ipykernel>=6.29.0",
+    "ipywidgets>=8.1.0",
 ]
 docs = [
     "sphinx>=7.2.6",
@@ -53,6 +67,12 @@ docs = [
 
 [project.scripts]
 lipidetective = "lipidetective.lipidetective:main"
+
+[project.urls]
+Homepage = "https://github.com/LipiTUM/lipidetective"
+Documentation = "https://lipitum.github.io/lipidetective/"
+Repository = "https://github.com/LipiTUM/lipidetective"
+"Bug Tracker" = "https://github.com/LipiTUM/lipidetective/issues"
 
 [build-system]
 requires = ["hatchling"]
