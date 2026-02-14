@@ -112,7 +112,9 @@ class PredictionDataset(Dataset[dict[str, Any]]):
         max_index = self.config["input_embedding"]["max_mz"] * 10**decimal_accuracy
         features = torch.IntTensor(features[features < max_index])
         if len(features) < n_peaks:
-            features = torch.IntTensor(torch.nn.functional.pad(features, (0, n_peaks - len(features))))
+            features = torch.IntTensor(
+                torch.nn.functional.pad(features, (0, n_peaks - len(features)))
+            )
 
         precursor_mz = int(round(float(precursor) * (10**decimal_accuracy)))
 
