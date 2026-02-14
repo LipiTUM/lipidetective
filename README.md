@@ -2,7 +2,10 @@
 
 [![Lint](https://github.com/LipiTUM/lipidetective/actions/workflows/lint.yml/badge.svg)](https://github.com/LipiTUM/lipidetective/actions/workflows/lint.yml)
 [![Tests](https://github.com/LipiTUM/lipidetective/actions/workflows/test.yml/badge.svg)](https://github.com/LipiTUM/lipidetective/actions/workflows/test.yml)
-[![Documentation](https://github.com/LipiTUM/lipidetective/actions/workflows/docs.yml/badge.svg)](https://github.com/LipiTUM/lipidetective/actions/workflows/docs.yml)
+[![Docs Build](https://github.com/LipiTUM/lipidetective/actions/workflows/docs.yml/badge.svg)](https://github.com/LipiTUM/lipidetective/actions/workflows/docs.yml)
+[![License: BSD-3-Clause](https://img.shields.io/badge/License-BSD_3--Clause-blue.svg)](https://github.com/LipiTUM/lipidetective/blob/main/LICENSE)
+[![Python 3.11+](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://www.python.org/downloads/)
+
 
 **LipiDetective** is a deep learning framework designed for the identification of molecular lipid species from tandem
 mass spectra.
@@ -59,5 +62,17 @@ If you want to use LipiDetective for your own work, please cite our [manuscript]
 }
 ```
 
+## Documentation
+
+Full documentation is available at [lipitum.github.io/lipidetective](https://lipitum.github.io/lipidetective/).
+
+## Contributing
+
+Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for development setup,
+coding guidelines, and the pull request process.
+
+This project follows the [Contributor Covenant Code of Conduct](CODE_OF_CONDUCT.md).
+
 ## License
-This project is licensed under the BSD 3-Clause License - see the `LICENSE` file for details.
+
+This project is licensed under the BSD 3-Clause License - see the [LICENSE](LICENSE) file for details.
