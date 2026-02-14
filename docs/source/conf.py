@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import sys
-from importlib.metadata import version as get_version
+from importlib.metadata import PackageNotFoundError, version as get_version
 from pathlib import Path
 
 # Add source directory to path for autodoc
@@ -14,7 +14,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 project = "LipiDetective"
 copyright = "2026, Vivian Wuerf"  # noqa: A001
 author = "Vivian Wuerf"
-release = get_version("lipidetective")
+try:
+    release = get_version("lipidetective")
+except PackageNotFoundError:
+    release = "0.0.0-dev"
 
 # -- General configuration -----------------------------------------------------
 
