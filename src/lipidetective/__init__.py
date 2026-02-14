@@ -7,9 +7,12 @@ lipid species from tandem mass spectrometry data.
 
 from __future__ import annotations
 
-from importlib.metadata import version
+from importlib.metadata import PackageNotFoundError, version
 
-__version__ = version("lipidetective")
+try:
+    __version__ = version("lipidetective")
+except PackageNotFoundError:
+    __version__ = "0.0.0-dev"
 __author__ = "Vivian Wuerf, Nikolai Koehler, Florian Molnar, Lisa Hahnefeld, Robert Gurke, Michael Witting, Josch K. Pauling"
 __license__ = "BSD-3-Clause"
 __url__ = "https://github.com/LipiTUM/lipidetective"
