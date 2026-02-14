@@ -29,6 +29,15 @@ dist/
 /notebooks/
 /specs/
 config/config.yaml
+/config/local/
+/config/pycharm_archive/
+/experiments/
+/manuscript/
+/models/archive/
+/wandb/
+/wandb_data/
+/scripts/
+/.vscode/
 
 # Coverage
 .coverage
@@ -39,6 +48,9 @@ htmlcov/
 .mypy_cache/
 .pytest_cache/
 .ruff_cache/
+
+# Virtual environment
+.venv/
 
 # Build artifacts
 *.egg-info/
