@@ -12,6 +12,7 @@ __pycache__/
 
 # Datasource local storage ignored files
 data/
+!tests/data/
 /dataSources/
 /dataSources.local.xml
 dist/

@@ -2,12 +2,15 @@
 
 import os
 import tempfile
+from pathlib import Path
 
 import h5py
 import numpy as np
 import pytest
 
 from lipidetective.helpers.lipid_library import LipidLibrary
+
+DATA_DIR = Path(__file__).parent / "data"
 
 
 @pytest.fixture
@@ -188,3 +191,171 @@ def lightning_config():
             "output_seq_length": 11,
         },
     }
+
+
+# ---------------------------------------------------------------------------
+# Integration test fixtures
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture(scope="session")
+def integration_hdf5_path():
+    """Path to the real mini HDF5 dataset (2 spectra)."""
+    path = DATA_DIR / "two_datapoint_dataset.hdf5"
+    assert path.exists(), f"Test data not found: {path}"
+    return str(path)
+
+
+@pytest.fixture(scope="session")
+def prediction_json_path():
+    """Path to the prediction input JSON (2 spectra extracted from HDF5)."""
+    path = DATA_DIR / "prediction_input.json"
+    assert path.exists(), f"Test data not found: {path}"
+    return str(path)
+
+
+@pytest.fixture(scope="session")
+def splitting_instructions_path():
+    """Path to the splitting instructions YAML for RF species-aware split."""
+    path = DATA_DIR / "splitting_instructions.yaml"
+    assert path.exists(), f"Test data not found: {path}"
+    return str(path)
+
+
+@pytest.fixture
+def integration_base_config(tmp_path, integration_hdf5_path):
+    """Complete config dict for integration tests. All workflow flags default to False."""
+    return {
+        "model": "transformer",
+        "cuda": {"gpu_nr": None},
+        "files": {
+            "train_input": integration_hdf5_path,
+            "val_input": None,
+            "test_input": integration_hdf5_path,
+            "predict_input": None,
+            "saved_model": None,
+            "output": str(tmp_path),
+            "splitting_instructions": None,
+        },
+        "workflow": {
+            "train": False,
+            "validate": False,
+            "test": False,
+            "tune": False,
+            "predict": False,
+            "save_model": False,
+            "load_model": False,
+            "log_every_n_steps": 1,
+        },
+        "training": {
+            "k": 2,
+            "learning_rate": 0.001,
+            "lr_step": 2,
+            "epochs": 1,
+            "batch": 1,
+            "nr_workers": 0,
+        },
+        "test": {"batch": 1, "confidence_score": True},
+        "predict": {
+            "output": "best_prediction",
+            "batch": 1,
+            "save_spectrum": False,
+            "confidence_threshold": 0.0,
+            "keep_empty": True,
+            "keep_wrong_polarity_preds": True,
+        },
+        "input_embedding": {
+            "n_peaks": 30,
+            "max_mz": 1600,
+            "decimal_accuracy": 1,
+        },
+        "transformer": {
+            "d_model": 32,
+            "num_heads": 4,
+            "dropout": 0.1,
+            "ffn_hidden": 64,
+            "num_layers": 2,
+            "output_seq_length": 11,
+        },
+    }
+
+
+@pytest.fixture(scope="module")
+def trained_model_artifact(tmp_path_factory, integration_hdf5_path):
+    """Train a transformer for 1 epoch and return (model_path, output_folder).
+
+    Module-scoped so the model is trained once and shared across test/predict tests.
+    """
+    from lipidetective.workflow.trainer import Trainer
+
+    output_folder = str(tmp_path_factory.mktemp("trained_model"))
+    config = {
+        "model": "transformer",
+        "cuda": {"gpu_nr": None},
+        "files": {
+            "train_input": integration_hdf5_path,
+            "val_input": None,
+            "test_input": None,
+            "predict_input": None,
+            "saved_model": None,
+            "output": output_folder,
+            "splitting_instructions": None,
+        },
+        "workflow": {
+            "train": True,
+            "validate": False,
+            "test": False,
+            "tune": False,
+            "predict": False,
+            "save_model": True,
+            "load_model": False,
+            "log_every_n_steps": 1,
+        },
+        "training": {
+            "k": 2,
+            "learning_rate": 0.001,
+            "lr_step": 2,
+            "epochs": 1,
+            "batch": 1,
+            "nr_workers": 0,
+        },
+        "test": {"batch": 1, "confidence_score": True},
+        "predict": {
+            "output": "best_prediction",
+            "batch": 1,
+            "save_spectrum": False,
+            "confidence_threshold": 0.0,
+            "keep_empty": True,
+            "keep_wrong_polarity_preds": True,
+        },
+        "input_embedding": {
+            "n_peaks": 30,
+            "max_mz": 1600,
+            "decimal_accuracy": 1,
+        },
+        "transformer": {
+            "d_model": 32,
+            "num_heads": 4,
+            "dropout": 0.1,
+            "ffn_hidden": 64,
+            "num_layers": 2,
+            "output_seq_length": 11,
+        },
+    }
+
+    trainer = Trainer(config)
+    trainer.train_without_validation()
+
+    # Find the saved model in the output subfolder created by Trainer
+    model_path = None
+    for root, _dirs, files in os.walk(output_folder):
+        for f in files:
+            if f == "lipidetective_model.pth":
+                model_path = os.path.join(root, f)
+                break
+
+    assert model_path is not None, "Model was not saved during training"
+
+    # Return the actual output folder Trainer created (contains timestamp)
+    trainer_output = os.path.dirname(model_path)
+    return model_path, trainer_output
