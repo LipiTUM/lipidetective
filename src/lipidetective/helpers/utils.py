@@ -144,12 +144,14 @@ def read_yaml(file_to_open: str) -> Any:
         return None
 
 
-def write_yaml(file_to_open: str, dict_to_write: dict[str, Any]) -> None:
+def write_yaml(file_to_open: str, dict_to_write: dict[str, Any]) -> bool:
     try:
         with open(file_to_open, "w") as file:
             yaml.dump(dict_to_write, file)
+        return True
     except Exception:
         logging.exception(f"Failed to write YAML file: {file_to_open}")
+        return False
 
 
 def set_seeds(seed: int = 42) -> None:

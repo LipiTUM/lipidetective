@@ -475,5 +475,7 @@ class LightningModule(pl.LightningModule):
 
         metadata = extract_model_metadata(self.config)
         metadata_file = os.path.join(output_folder, "model_config.yaml")
-        write_yaml(metadata_file, metadata)
-        logging.info(f"Model metadata saved to: {metadata_file}")
+        if write_yaml(metadata_file, metadata):
+            logging.info(f"Model metadata saved to: {metadata_file}")
+        else:
+            logging.warning(f"Failed to save model metadata to: {metadata_file}")
