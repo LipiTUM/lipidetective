@@ -9,11 +9,11 @@ import pytorch_lightning as pl
 import torch
 import torch.nn as nn
 import torch.optim as optim
+import wandb
 from torchmetrics.aggregation import CatMetric
 from torchmetrics.regression import MeanAbsoluteError, R2Score
 from torchmetrics.wrappers import ClasswiseWrapper
 
-import wandb
 from lipidetective.helpers.logging import CustomAccuracy, Evaluator
 from lipidetective.helpers.utils import (
     extract_model_metadata,

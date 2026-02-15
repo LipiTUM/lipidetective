@@ -102,6 +102,7 @@ ignore = [
 
 [tool.ruff.lint.isort]
 known-first-party = ["lipidetective"]
+known-third-party = ["wandb"]
 
 [tool.ruff.format]
 quote-style = "double"

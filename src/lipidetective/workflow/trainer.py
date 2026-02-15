@@ -13,6 +13,7 @@ import pandas as pd
 import pytorch_lightning as pl
 import ray
 import torch
+import wandb
 from pytorch_lightning import loggers as pl_loggers
 from pytorch_lightning.callbacks import Callback
 from ray import tune
@@ -23,7 +24,6 @@ from ray.tune.logger import LoggerCallback
 from ray.tune.schedulers import ASHAScheduler
 from torch.utils.data import DataLoader
 
-import wandb
 from lipidetective.helpers.lipid_library import LipidLibrary
 from lipidetective.helpers.logging import CustomLogger, Evaluator, PredictionLogger
 from lipidetective.helpers.utils import (
