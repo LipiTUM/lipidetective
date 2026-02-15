@@ -400,6 +400,25 @@ class TestModelMetadata:
         assert "convolutional" in metadata
         assert "transformer" not in metadata
 
+    def test_extract_feedforward_metadata(self):
+        """Correct keys extracted for feedforward config."""
+        from lipidetective.helpers.utils import extract_model_metadata
+
+        config = {
+            "model": "feedforward",
+            "input_embedding": {"type": "peaks", "n_peaks": 100, "max_mz": 1600},
+            "feedforward": {"layer_1_size": 64, "layer_2_size": 32, "layer_3_size": 16},
+            "training": {"batch": 4, "epochs": 2},
+        }
+        metadata = extract_model_metadata(config)
+
+        assert metadata["model"] == "feedforward"
+        assert "input_embedding" in metadata
+        assert "feedforward" in metadata
+        assert "transformer" not in metadata
+        assert "convolutional" not in metadata
+        assert "training" not in metadata
+
     def test_extract_includes_version(self):
         """Metadata contains lipidetective_version."""
         from lipidetective.helpers.utils import extract_model_metadata
@@ -454,6 +473,33 @@ class TestModelMetadata:
         assert result["transformer"]["d_model"] == 32
         assert result["input_embedding"]["n_peaks"] == 30
         assert "override" in caplog.text.lower()
+
+    def test_validate_model_type_mismatch(self, tmp_path, caplog):
+        """Mismatched model type skips model-specific overrides with warning."""
+        from lipidetective.helpers.utils import (
+            extract_model_metadata,
+            validate_model_metadata,
+            write_yaml,
+        )
+
+        # Save metadata from a transformer config
+        config = self._transformer_config()
+        metadata = extract_model_metadata(config)
+        sidecar = str(tmp_path / "model_config.yaml")
+        write_yaml(sidecar, metadata)
+
+        # Load with a convolutional config
+        conv_config = self._convolutional_config()
+        original_channels = conv_config["convolutional"]["channels_conv_1"]
+
+        with caplog.at_level(_logging.WARNING):
+            result = validate_model_metadata(conv_config, sidecar)
+
+        # Model-specific section should NOT be overridden
+        assert result["convolutional"]["channels_conv_1"] == original_channels
+        assert "mismatch" in caplog.text.lower()
+        # input_embedding should still be overridden
+        assert result["input_embedding"]["n_peaks"] == 30
 
     def test_validate_missing_sidecar(self, caplog):
         """Returns config unchanged when sidecar doesn't exist."""

@@ -235,7 +235,19 @@ def validate_model_metadata(
 
     logging.info("Loaded model metadata%s: %s", source_label, metadata_path)
 
-    model_type: str = metadata.get("model", config.get("model", ""))
+    metadata_model = metadata.get("model")
+    config_model = config.get("model")
+    if metadata_model and config_model and metadata_model != config_model:
+        logging.warning(
+            "Model type mismatch: metadata has %r but config has %r; "
+            "skipping model-specific overrides.",
+            metadata_model,
+            config_model,
+        )
+        model_type = ""
+    else:
+        model_type = metadata_model or config_model or ""
+
     sections = ["input_embedding"]
     if model_type:
         sections.append(model_type)
