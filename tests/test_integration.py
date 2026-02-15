@@ -44,6 +44,36 @@ class TestTrainWithoutValidation:
         saved_model = os.path.join(output_folder, "lipidetective_model.pth")
         assert os.path.isfile(saved_model), "Model file was not saved"
 
+    def test_model_config_sidecar_written(self, integration_base_config):
+        """Model metadata sidecar is written alongside the .pth file."""
+        from lipidetective.helpers.utils import read_yaml
+
+        config = integration_base_config.copy()
+        config["workflow"] = {**config["workflow"], "train": True, "save_model": True}
+
+        trainer = Trainer(config)
+        trainer.train_without_validation()
+
+        output_contents = os.listdir(config["files"]["output"])
+        output_dirs = [
+            d
+            for d in output_contents
+            if os.path.isdir(os.path.join(config["files"]["output"], d))
+            and d.startswith("LipiDetective_Output_")
+        ]
+        output_folder = os.path.join(config["files"]["output"], output_dirs[0])
+
+        sidecar = os.path.join(output_folder, "model_config.yaml")
+        assert os.path.isfile(sidecar), "model_config.yaml sidecar was not saved"
+
+        metadata = read_yaml(sidecar)
+        assert metadata is not None
+        assert "lipidetective_version" in metadata
+        assert metadata["model"] == "transformer"
+        assert "input_embedding" in metadata
+        assert "transformer" in metadata
+        assert metadata["transformer"]["d_model"] == config["transformer"]["d_model"]
+
 
 class TestTrainWithValidation:
     """Train a transformer with k-fold cross-validation (k=2, 2 lipid species)."""

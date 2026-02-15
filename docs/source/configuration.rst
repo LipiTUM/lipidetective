@@ -45,6 +45,7 @@ File Paths
      test_input: 'processed/test_dataset.hdf5'
      predict_input: 'raw/sample.mzML'
      saved_model: 'lipidetective_model.pth'
+     model_config: null
      output: 'output'
      splitting_instructions: 'validation_splits/train_val_split.yaml'
 
@@ -61,9 +62,9 @@ default base directories:
    * - Data paths (``train_input``, ``val_input``, ``test_input``, ``predict_input``)
      - ``data/``
      - HDF5 or mzML files
-   * - Model paths (``saved_model``)
+   * - Model paths (``saved_model``, ``model_config``)
      - ``models/``
-     - Saved model weights
+     - Saved model weights and metadata sidecar
    * - Output paths (``output``)
      - ``experiments/``
      - Experiment results
@@ -179,17 +180,23 @@ Workflow
      - ``10``
      - PyTorch Lightning logging frequency
 
-.. warning::
+.. note::
 
-   When loading a pre-trained model (``load_model: True``), the
-   ``transformer``, ``input_embedding``, and ``model`` settings in your config
-   **must exactly match** the config used to train that model. The saved
-   ``.pth`` file contains only weight tensors — no architecture metadata. If
-   any parameter differs (e.g. ``d_model``, ``num_heads``, ``n_peaks``),
-   PyTorch will raise a ``RuntimeError`` due to mismatched tensor shapes.
+   When saving a model (``save_model: True``), a ``model_config.yaml`` sidecar
+   is written alongside the ``.pth`` file. This sidecar records the
+   architecture-relevant config (``model``, ``input_embedding``, and the
+   model-specific section such as ``transformer``).
 
-   Always keep the config file that was used for training alongside the saved
-   model.
+   When loading a model (``load_model: True``), LipiDetective automatically
+   looks for this sidecar next to the ``.pth`` file. If found, any mismatched
+   architecture keys are **auto-overridden** to match the saved model, with a
+   warning logged for each differing key. This prevents cryptic shape-mismatch
+   errors from PyTorch.
+
+   To point to a sidecar in a different location, set ``files.model_config``
+   explicitly. If no sidecar is found (e.g. for older models saved before this
+   feature), loading proceeds as before — ensure your config matches the
+   training config manually.
 
 Training
 --------

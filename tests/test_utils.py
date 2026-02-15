@@ -344,6 +344,177 @@ class TestLipidClassDetectionExtended:
         assert is_lipid_class_with_slash("DG 16:0_18:1") is False
 
 
+class TestModelMetadata:
+    """Tests for model metadata extract/validate functions."""
+
+    def _transformer_config(self):
+        return {
+            "model": "transformer",
+            "input_embedding": {"n_peaks": 30, "max_mz": 1600, "decimal_accuracy": 1},
+            "transformer": {
+                "d_model": 32,
+                "num_heads": 4,
+                "dropout": 0.1,
+                "ffn_hidden": 64,
+                "num_layers": 2,
+                "output_seq_length": 11,
+            },
+            "training": {"batch": 4, "epochs": 2},
+        }
+
+    def _convolutional_config(self):
+        return {
+            "model": "convolutional",
+            "input_embedding": {"type": "peaks", "n_peaks": 100, "max_mz": 1600},
+            "convolutional": {
+                "channels_conv_1": 16,
+                "kernel_size_1": [2, 3],
+                "lin_layer_1": 64,
+            },
+            "training": {"batch": 4, "epochs": 2},
+        }
+
+    def test_extract_transformer_metadata(self):
+        """Correct keys extracted for transformer config."""
+        from lipidetective.helpers.utils import extract_model_metadata
+
+        config = self._transformer_config()
+        metadata = extract_model_metadata(config)
+
+        assert metadata["model"] == "transformer"
+        assert "input_embedding" in metadata
+        assert "transformer" in metadata
+        assert metadata["transformer"]["d_model"] == 32
+        # Training params should NOT be in metadata
+        assert "training" not in metadata
+
+    def test_extract_convolutional_metadata(self):
+        """Correct keys extracted for convolutional config."""
+        from lipidetective.helpers.utils import extract_model_metadata
+
+        config = self._convolutional_config()
+        metadata = extract_model_metadata(config)
+
+        assert metadata["model"] == "convolutional"
+        assert "input_embedding" in metadata
+        assert "convolutional" in metadata
+        assert "transformer" not in metadata
+
+    def test_extract_feedforward_metadata(self):
+        """Correct keys extracted for feedforward config."""
+        from lipidetective.helpers.utils import extract_model_metadata
+
+        config = {
+            "model": "feedforward",
+            "input_embedding": {"type": "peaks", "n_peaks": 100, "max_mz": 1600},
+            "feedforward": {"layer_1_size": 64, "layer_2_size": 32, "layer_3_size": 16},
+            "training": {"batch": 4, "epochs": 2},
+        }
+        metadata = extract_model_metadata(config)
+
+        assert metadata["model"] == "feedforward"
+        assert "input_embedding" in metadata
+        assert "feedforward" in metadata
+        assert "transformer" not in metadata
+        assert "convolutional" not in metadata
+        assert "training" not in metadata
+
+    def test_extract_includes_version(self):
+        """Metadata contains lipidetective_version."""
+        from lipidetective.helpers.utils import extract_model_metadata
+
+        config = self._transformer_config()
+        metadata = extract_model_metadata(config)
+
+        assert "lipidetective_version" in metadata
+        assert isinstance(metadata["lipidetective_version"], str)
+
+    def test_validate_matching_config(self, tmp_path, caplog):
+        """No warnings logged when config matches saved metadata."""
+        from lipidetective.helpers.utils import (
+            extract_model_metadata,
+            validate_model_metadata,
+            write_yaml,
+        )
+
+        config = self._transformer_config()
+        metadata = extract_model_metadata(config)
+        sidecar = str(tmp_path / "model_config.yaml")
+        write_yaml(sidecar, metadata)
+
+        with caplog.at_level(_logging.WARNING):
+            result = validate_model_metadata(config.copy(), sidecar)
+
+        assert result["transformer"]["d_model"] == 32
+        assert "override" not in caplog.text.lower()
+
+    def test_validate_mismatched_config_overrides(self, tmp_path, caplog):
+        """Differing keys get overridden with warnings."""
+        from lipidetective.helpers.utils import (
+            extract_model_metadata,
+            validate_model_metadata,
+            write_yaml,
+        )
+
+        config = self._transformer_config()
+        metadata = extract_model_metadata(config)
+        sidecar = str(tmp_path / "model_config.yaml")
+        write_yaml(sidecar, metadata)
+
+        # Change config to have different values
+        modified = self._transformer_config()
+        modified["transformer"]["d_model"] = 64
+        modified["input_embedding"]["n_peaks"] = 50
+
+        with caplog.at_level(_logging.WARNING):
+            result = validate_model_metadata(modified, sidecar)
+
+        # Should be overridden to saved values
+        assert result["transformer"]["d_model"] == 32
+        assert result["input_embedding"]["n_peaks"] == 30
+        assert "override" in caplog.text.lower()
+
+    def test_validate_model_type_mismatch(self, tmp_path, caplog):
+        """Mismatched model type skips model-specific overrides with warning."""
+        from lipidetective.helpers.utils import (
+            extract_model_metadata,
+            validate_model_metadata,
+            write_yaml,
+        )
+
+        # Save metadata from a transformer config
+        config = self._transformer_config()
+        metadata = extract_model_metadata(config)
+        sidecar = str(tmp_path / "model_config.yaml")
+        write_yaml(sidecar, metadata)
+
+        # Load with a convolutional config
+        conv_config = self._convolutional_config()
+        original_channels = conv_config["convolutional"]["channels_conv_1"]
+
+        with caplog.at_level(_logging.WARNING):
+            result = validate_model_metadata(conv_config, sidecar)
+
+        # Model-specific section should NOT be overridden
+        assert result["convolutional"]["channels_conv_1"] == original_channels
+        assert "mismatch" in caplog.text.lower()
+        # input_embedding should still be overridden
+        assert result["input_embedding"]["n_peaks"] == 30
+
+    def test_validate_missing_sidecar(self, caplog):
+        """Returns config unchanged when sidecar doesn't exist."""
+        from lipidetective.helpers.utils import validate_model_metadata
+
+        config = self._transformer_config()
+        original_d_model = config["transformer"]["d_model"]
+
+        with caplog.at_level(_logging.DEBUG):
+            result = validate_model_metadata(config, "/nonexistent/model_config.yaml")
+
+        assert result["transformer"]["d_model"] == original_d_model
+        assert result is config  # same object, unchanged
+
+
 class TestSetupLogging:
     """Tests for setup_logging function."""
 

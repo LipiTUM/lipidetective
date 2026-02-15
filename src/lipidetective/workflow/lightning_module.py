@@ -2,18 +2,24 @@ from __future__ import annotations
 
 import logging
 import os
+from pathlib import Path
 from typing import Any
 
 import pytorch_lightning as pl
 import torch
 import torch.nn as nn
 import torch.optim as optim
+import wandb
 from torchmetrics.aggregation import CatMetric
 from torchmetrics.regression import MeanAbsoluteError, R2Score
 from torchmetrics.wrappers import ClasswiseWrapper
 
-import wandb
 from lipidetective.helpers.logging import CustomAccuracy, Evaluator
+from lipidetective.helpers.utils import (
+    extract_model_metadata,
+    validate_model_metadata,
+    write_yaml,
+)
 from lipidetective.models.convolutional_network import ConvolutionalNetwork
 from lipidetective.models.feedforward_network import FeedForwardNetwork
 from lipidetective.models.transformer_network import TransformerNetwork
@@ -33,6 +39,19 @@ class LightningModule(pl.LightningModule):
         self.config: dict[str, Any] = config
         self.batch_size: int = self.config["training"]["batch"]
         self.nr_epochs: int = self.config["training"]["epochs"] - 1
+
+        if self.config["workflow"]["load_model"]:
+            if self.config["files"].get("model_config"):
+                metadata_path = self.config["files"]["model_config"]
+                metadata_source = "config"
+            else:
+                metadata_path = str(
+                    Path(self.config["files"]["saved_model"]).parent / "model_config.yaml"
+                )
+                metadata_source = "auto-detected"
+            self.config = validate_model_metadata(
+                self.config, metadata_path, source=metadata_source
+            )
 
         self.model: nn.Module = self.get_neural_network()
 
@@ -453,3 +472,10 @@ class LightningModule(pl.LightningModule):
         output_file = os.path.join(output_folder, "lipidetective_model.pth")
         torch.save(self.model.state_dict(), output_file)
         logging.info(f"Model saved to: {output_file}")
+
+        metadata = extract_model_metadata(self.config)
+        metadata_file = os.path.join(output_folder, "model_config.yaml")
+        if write_yaml(metadata_file, metadata):
+            logging.info(f"Model metadata saved to: {metadata_file}")
+        else:
+            logging.warning(f"Failed to save model metadata to: {metadata_file}")
