@@ -90,12 +90,13 @@ def resolve_config_paths(config: dict[str, Any]) -> dict[str, Any]:
                 files[key] = str(Path(path).expanduser().resolve())
 
     # Model paths
-    if "saved_model" in files and files["saved_model"]:
-        path = files["saved_model"]
-        if not is_absolute_path(path):
-            files["saved_model"] = str(resolve_model_path(path))
-        else:
-            files["saved_model"] = str(Path(path).expanduser().resolve())
+    for model_key in ("saved_model", "model_config"):
+        if model_key in files and files[model_key]:
+            path = files[model_key]
+            if not is_absolute_path(path):
+                files[model_key] = str(resolve_model_path(path))
+            else:
+                files[model_key] = str(Path(path).expanduser().resolve())
 
     # Output paths
     if "output" in files and files["output"]:
@@ -184,6 +185,77 @@ def truncate(values: np.ndarray, decimal_places: int = 0) -> list[float]:
     # below an integer (e.g. 200.0 * 10 → 1999.9999999999998).
     eps = 1e-9
     return [(math.floor(x * factor + eps) / factor) for x in values]
+
+
+def extract_model_metadata(config: dict[str, Any]) -> dict[str, Any]:
+    """Extract architecture-relevant config sections for a model metadata sidecar.
+
+    Returns a dict with ``lipidetective_version``, ``model``,
+    ``input_embedding``, and the model-specific section (e.g. ``transformer``).
+    """
+    import lipidetective
+
+    model_type: str = config["model"]
+    metadata: dict[str, Any] = {
+        "lipidetective_version": lipidetective.__version__,
+        "model": model_type,
+        "input_embedding": config["input_embedding"],
+    }
+    if model_type in config:
+        metadata[model_type] = config[model_type]
+    return metadata
+
+
+def validate_model_metadata(
+    config: dict[str, Any], metadata_path: str, *, source: str = ""
+) -> dict[str, Any]:
+    """Validate current config against a saved model metadata sidecar.
+
+    If the sidecar file exists, logs mismatches as warnings and deep-merges
+    the saved architecture sections into *config* (auto-override).  If the
+    sidecar is missing, returns *config* unchanged for backwards compatibility.
+
+    Args:
+        config: Current configuration dictionary.
+        metadata_path: Path to the model_config.yaml sidecar.
+        source: How the path was resolved (e.g. ``"config"`` or
+            ``"auto-detected"``), included in log messages.
+    """
+    source_label = f" ({source})" if source else ""
+    if not Path(metadata_path).is_file():
+        logging.debug("No model metadata sidecar found at: %s%s", metadata_path, source_label)
+        return config
+
+    metadata = read_yaml(metadata_path)
+    if metadata is None:
+        logging.warning("Could not read model metadata: %s", metadata_path)
+        return config
+
+    logging.info("Loaded model metadata%s: %s", source_label, metadata_path)
+
+    model_type: str = metadata.get("model", config.get("model", ""))
+    sections = ["input_embedding"]
+    if model_type:
+        sections.append(model_type)
+
+    for section in sections:
+        saved = metadata.get(section, {})
+        current = config.get(section, {})
+        if not isinstance(saved, dict) or not isinstance(current, dict):
+            continue
+        for key, saved_val in saved.items():
+            current_val = current.get(key)
+            if current_val != saved_val:
+                logging.warning(
+                    "Model metadata override: %s.%s = %r (was %r)",
+                    section,
+                    key,
+                    saved_val,
+                    current_val,
+                )
+        config[section] = {**current, **saved}
+
+    return config
 
 
 def is_lipid_class_with_slash(lipid_name: str) -> bool:

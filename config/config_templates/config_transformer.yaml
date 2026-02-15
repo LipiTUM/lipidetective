@@ -16,6 +16,7 @@ files:
    predict_input: 'raw/sample.mzML'
    # Relative to models/ or $LIPIDETECTIVE_MODELS_DIR
    saved_model: 'lipidetective_model.pth'
+   model_config: null  # Optional: explicit path to model_config.yaml sidecar (auto-detected next to saved_model by default)
    # Relative to experiments/ or $LIPIDETECTIVE_OUTPUT_DIR
    output: 'output'
    # Relative to config/
