@@ -213,9 +213,10 @@ def validate_model_metadata(
 ) -> dict[str, Any]:
     """Validate current config against a saved model metadata sidecar.
 
-    If the sidecar file exists, logs mismatches as warnings and deep-merges
-    the saved architecture sections into *config* (auto-override).  If the
-    sidecar is missing, returns *config* unchanged for backwards compatibility.
+    If the sidecar file exists, logs mismatches as warnings and merges
+    the saved architecture sections into *config* (shallow auto-override).
+    If the sidecar is missing, returns *config* unchanged for backwards
+    compatibility.
 
     Args:
         config: Current configuration dictionary.

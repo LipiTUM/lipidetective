@@ -50,12 +50,17 @@ which config fields are set (checked in this order):
    trains an independent model and reports per-fold metrics.
 
 After training, set ``workflow.save_model: True`` to save model weights.
-The save location depends on the training mode:
+A ``model_config.yaml`` sidecar is saved alongside each ``.pth`` file,
+recording the architecture config used during training. The save location
+depends on the training mode:
 
 - **Single-split training** (no validation or custom split):
   ``<files.output>/LipiDetective_Output_<timestamp>/lipidetective_model.pth``
 - **K-fold cross-validation**: one model per fold, e.g.
   ``<files.output>/LipiDetective_Output_<timestamp>/fold_1/lipidetective_model.pth``
+
+When loading a model later, the sidecar is auto-detected and used to validate
+the current config against the saved architecture (see :doc:`configuration`).
 
 Validation
 ----------

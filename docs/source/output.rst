@@ -15,6 +15,8 @@ Training creates logger subdirectories inside the output folder:
 
    experiments/<output>/LipiDetective_Output_<timestamp>/
    ├── config.yaml
+   ├── lipidetective_model.pth          # When save_model: True
+   ├── model_config.yaml                # Architecture metadata sidecar
    ├── custom_logger/
    │   ├── train_metrics.csv                        # Per-epoch loss & accuracy
    │   ├── train_predictions.csv                    # Per-batch predictions vs labels
