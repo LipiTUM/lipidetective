@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import logging
 from typing import Any
 
 import h5py
@@ -59,16 +60,16 @@ class SpectraViewer:
             selector.param.watch(self.change_group_selection, "value")
 
     def created(self, session_context: Any) -> None:
-        print("SpectraViewer session created.")
+        logging.debug("SpectraViewer session created.")
 
     def destroyed(self, session_context: Any) -> None:
-        print("SpectraViewer session destroyed.")
+        logging.debug("SpectraViewer session destroyed.")
         self.experiment.close()
         self.app.stop()
 
     def main_app(self) -> Any:
         pn.state.on_session_destroyed(self.destroyed)
-        print(self.hdf5_file_path)
+        logging.debug(self.hdf5_file_path)
 
         title = pn.pane.Markdown("""# HDF5 Spectra Viewer""")
         plot_column = pn.Column(self.plot_pane, self.spectrum_info)

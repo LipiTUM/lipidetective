@@ -1,9 +1,11 @@
 """Unit tests for helpers/utils.py functions."""
 
+import logging as _logging
 import os
 import tempfile
 
 import numpy as np
+import pytest
 
 
 class TestReadYaml:
@@ -161,20 +163,21 @@ class TestWriteYaml:
         finally:
             os.unlink(temp_path)
 
-    def test_write_yaml_handles_invalid_path(self, capsys):
+    def test_write_yaml_handles_invalid_path(self, caplog):
         """Test write_yaml handles write errors gracefully."""
+        import logging as _logging
+
         from lipidetective.helpers.utils import write_yaml
 
         # Try to write to an invalid path (directory that doesn't exist)
         invalid_path = "/nonexistent_dir_12345/config.yaml"
         data = {"key": "value"}
 
-        # Should not raise, just print traceback
-        write_yaml(invalid_path, data)
+        # Should not raise, just log the exception
+        with caplog.at_level(_logging.ERROR):
+            write_yaml(invalid_path, data)
 
-        # Verify traceback was printed
-        captured = capsys.readouterr()
-        assert "Traceback" in captured.err or "FileNotFoundError" in captured.err
+        assert "Failed to write YAML file" in caplog.text
 
 
 class TestParseConfig:
@@ -339,3 +342,84 @@ class TestLipidClassDetectionExtended:
 
         assert is_lipid_class_with_slash("TG 16:0_18:1_18:2") is False
         assert is_lipid_class_with_slash("DG 16:0_18:1") is False
+
+
+class TestSetupLogging:
+    """Tests for setup_logging function."""
+
+    @pytest.fixture(autouse=True)
+    def _reset_root_logger(self):
+        """Reset root logger handlers after each test."""
+        yield
+        root = _logging.getLogger()
+        for handler in root.handlers[:]:
+            root.removeHandler(handler)
+        root.setLevel(_logging.WARNING)
+
+    def test_default_config_sets_info_level(self):
+        """Default config (no logging key) should set INFO level with 1 handler."""
+        from lipidetective.helpers.utils import setup_logging
+
+        setup_logging({"model": "transformer"})
+
+        root = _logging.getLogger()
+        assert root.level == _logging.INFO
+        assert len(root.handlers) == 1
+        assert isinstance(root.handlers[0], _logging.StreamHandler)
+
+    def test_warning_level(self):
+        """Setting level to WARNING should configure root logger accordingly."""
+        from lipidetective.helpers.utils import setup_logging
+
+        setup_logging({"logging": {"level": "WARNING"}})
+
+        root = _logging.getLogger()
+        assert root.level == _logging.WARNING
+
+    def test_debug_level(self):
+        """Setting level to DEBUG should configure root logger accordingly."""
+        from lipidetective.helpers.utils import setup_logging
+
+        setup_logging({"logging": {"level": "DEBUG"}})
+
+        root = _logging.getLogger()
+        assert root.level == _logging.DEBUG
+
+    def test_file_handler(self, tmp_path):
+        """Setting file should add a FileHandler that writes output."""
+        from lipidetective.helpers.utils import setup_logging
+
+        log_file = str(tmp_path / "test.log")
+        setup_logging({"logging": {"file": log_file}})
+
+        _logging.info("test message")
+
+        root = _logging.getLogger()
+        assert len(root.handlers) == 2
+
+        # Flush and check file contents
+        for handler in root.handlers:
+            handler.flush()
+
+        with open(log_file) as f:
+            contents = f.read()
+        assert "test message" in contents
+
+    def test_logging_null_falls_back_to_info(self):
+        """``logging: null`` in YAML should not crash, falls back to INFO."""
+        from lipidetective.helpers.utils import setup_logging
+
+        setup_logging({"logging": None})
+
+        root = _logging.getLogger()
+        assert root.level == _logging.INFO
+        assert len(root.handlers) == 1
+
+    def test_invalid_level_falls_back_to_info(self):
+        """An invalid level name should fall back to INFO."""
+        from lipidetective.helpers.utils import setup_logging
+
+        setup_logging({"logging": {"level": "BANANA"}})
+
+        root = _logging.getLogger()
+        assert root.level == _logging.INFO

@@ -9,6 +9,7 @@ from lipidetective.helpers.utils import (
     parse_config,
     resolve_config_paths,
     set_seeds,
+    setup_logging,
 )
 from lipidetective.workflow.trainer import Trainer
 
@@ -31,6 +32,7 @@ def main() -> None:
     # Parse yaml config file and resolve paths
     config, args = parse_config()
     config = resolve_config_paths(config)
+    setup_logging(config)
 
     # Set up trainer which will perform the workflow tasks
     trainer = Trainer(config)

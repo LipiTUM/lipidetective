@@ -67,29 +67,35 @@ class TestCheckRegressionAccuracy:
 class TestCalculateAccuracy:
     """Tests for calculate_accuracy method."""
 
-    def test_classification_accuracy_calculation(self, rf_instance, capsys):
+    def test_classification_accuracy_calculation(self, rf_instance, caplog):
         """Should calculate accuracy for classification predictions."""
+        import logging
+
         predictions = ["PC 34:1", "PE 36:2", "PC 34:1"]
         labels = ["PC 34:1", "PE 36:2", "PS 38:4"]
 
-        result = rf_instance.calculate_accuracy(predictions, labels, "Test Model", "classification")
+        with caplog.at_level(logging.INFO):
+            result = rf_instance.calculate_accuracy(
+                predictions, labels, "Test Model", "classification"
+            )
 
         assert "Correct: 2" in result
         assert "Total:3" in result
-        captured = capsys.readouterr()
-        assert "Test Model" in captured.out
+        assert "Test Model" in caplog.text
 
-    def test_regression_accuracy_calculation(self, rf_instance, capsys):
+    def test_regression_accuracy_calculation(self, rf_instance, caplog):
         """Should calculate accuracy for regression predictions."""
+        import logging
+
         predictions = [[100.05, 200.01, 300.09], [100.5, 200.5, 300.5]]
         labels = [[100.0, 200.0, 300.0], [100.0, 200.0, 300.0]]
 
-        result = rf_instance.calculate_accuracy(predictions, labels, "Regressor", "regression")
+        with caplog.at_level(logging.INFO):
+            result = rf_instance.calculate_accuracy(predictions, labels, "Regressor", "regression")
 
         assert "Correct: 1" in result  # Only first is within tolerance
         assert "Total:2" in result
-        captured = capsys.readouterr()
-        assert "Regressor" in captured.out
+        assert "Regressor" in caplog.text
 
 
 class TestWriteOutputToFile:

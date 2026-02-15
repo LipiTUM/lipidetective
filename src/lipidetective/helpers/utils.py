@@ -5,7 +5,6 @@ import logging
 import math
 import os
 import random
-import traceback
 from pathlib import Path
 from typing import Any
 
@@ -20,6 +19,43 @@ from lipidetective.helpers.paths import (
     resolve_model_path,
     resolve_output_path,
 )
+
+
+def setup_logging(config: dict[str, Any]) -> None:
+    """Configure logging from the ``logging`` section of the YAML config.
+
+    Reads ``config["logging"]["level"]`` (default ``"INFO"``) and
+    ``config["logging"]["file"]`` (default ``None``).  Clears the bootstrap
+    handlers installed by ``basicConfig`` and installs a stderr
+    ``StreamHandler`` plus an optional ``FileHandler``.
+    """
+    log_config = (config or {}).get("logging") or {}
+    level_name = str(log_config.get("level", "INFO")).upper()
+    log_file: str | None = log_config.get("file")
+
+    level = getattr(logging, level_name, None)
+    if not isinstance(level, int):
+        level = logging.INFO
+
+    fmt = "%(asctime)s %(levelname)s: %(message)s"
+    datefmt = "%d/%m/%Y - %H:%M:%S"
+    formatter = logging.Formatter(fmt, datefmt=datefmt)
+
+    root = logging.getLogger()
+    root.setLevel(level)
+
+    # Remove bootstrap handlers set by basicConfig
+    for handler in root.handlers[:]:
+        root.removeHandler(handler)
+
+    stream_handler = logging.StreamHandler()
+    stream_handler.setFormatter(formatter)
+    root.addHandler(stream_handler)
+
+    if log_file:
+        file_handler = logging.FileHandler(log_file)
+        file_handler.setFormatter(formatter)
+        root.addHandler(file_handler)
 
 
 def resolve_config_paths(config: dict[str, Any]) -> dict[str, Any]:
@@ -103,7 +139,7 @@ def read_yaml(file_to_open: str) -> Any:
             loaded_file = yaml.safe_load(file)
         return loaded_file
     except Exception:
-        traceback.print_exc()
+        logging.exception(f"Failed to read YAML file: {file_to_open}")
         return None
 
 
@@ -112,7 +148,7 @@ def write_yaml(file_to_open: str, dict_to_write: dict[str, Any]) -> None:
         with open(file_to_open, "w") as file:
             yaml.dump(dict_to_write, file)
     except Exception:
-        traceback.print_exc()
+        logging.exception(f"Failed to write YAML file: {file_to_open}")
 
 
 def set_seeds(seed: int = 42) -> None:

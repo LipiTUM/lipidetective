@@ -13,7 +13,7 @@ from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.model_selection import train_test_split
 from sklearn.utils import shuffle
 
-from lipidetective.helpers.utils import read_yaml
+from lipidetective.helpers.utils import read_yaml, setup_logging
 
 
 class RandomForest:
@@ -274,7 +274,7 @@ class RandomForest:
         prediction_accuracy = (
             f"{model}\nCorrect: {count_correct}\nTotal:{total}\nAccuracy: {count_correct / total}\n"
         )
-        print(prediction_accuracy)
+        logging.info(prediction_accuracy)
 
         prediction_evaluation_str = "\n".join(prediction_evaluation)
         label_count_str = "\n".join(
@@ -406,6 +406,7 @@ if __name__ == "__main__":
     logging.info("Random forest run started.")
 
     config = get_config()
+    setup_logging(config)
 
     random_forest = RandomForest(config)
     random_forest.run()

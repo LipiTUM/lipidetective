@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import os
 from typing import Any
 
@@ -7,11 +8,11 @@ import pytorch_lightning as pl
 import torch
 import torch.nn as nn
 import torch.optim as optim
-import wandb
 from torchmetrics.aggregation import CatMetric
 from torchmetrics.regression import MeanAbsoluteError, R2Score
 from torchmetrics.wrappers import ClasswiseWrapper
 
+import wandb
 from lipidetective.helpers.logging import CustomAccuracy, Evaluator
 from lipidetective.models.convolutional_network import ConvolutionalNetwork
 from lipidetective.models.feedforward_network import FeedForwardNetwork
@@ -38,6 +39,7 @@ class LightningModule(pl.LightningModule):
         if self.config["workflow"]["load_model"]:
             model_file_path: str = self.config["files"]["saved_model"]
             self.model.load_state_dict(torch.load(model_file_path))
+            logging.info(f"Loaded pre-trained model from: {model_file_path}")
 
         # Declare all conditionally initialized attributes with Optional types
         self.train_mae_hg: MeanAbsoluteError | None = None
@@ -168,6 +170,7 @@ class LightningModule(pl.LightningModule):
                     {
                         "train_loss": loss.item(),
                         "train_accuracy": accuracy_dict["customaccuracy_train_accuracy"],
+                        "train_mean_accuracy": accuracy_dict["customaccuracy_train_mean_accuracy"],
                     }
                 )
 
@@ -291,6 +294,7 @@ class LightningModule(pl.LightningModule):
                     {
                         "val_loss": loss.item(),
                         "val_accuracy": accuracy_dict["customaccuracy_val_accuracy"],
+                        "val_mean_accuracy": accuracy_dict["customaccuracy_val_mean_accuracy"],
                     }
                 )
 
@@ -448,4 +452,4 @@ class LightningModule(pl.LightningModule):
     def save_model(self, output_folder: str) -> None:
         output_file = os.path.join(output_folder, "lipidetective_model.pth")
         torch.save(self.model.state_dict(), output_file)
-        print("Model saved.")
+        logging.info(f"Model saved to: {output_file}")

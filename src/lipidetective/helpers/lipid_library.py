@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import os
 import pathlib
 import re
@@ -37,6 +38,12 @@ class LipidLibrary:
         self.tokens = read_yaml(os.path.join(cwd, "lipid_info/lipid_components_tokens.yaml"))
         self.tokens_inv = {v: k for k, v in self.tokens.items()}
         self.nr_tokens = len(self.tokens)
+
+        logging.debug(
+            f"LipidLibrary initialized: {self.nr_tokens} tokens, "
+            f"{len(self.molecular_lipid_species)} molecular species, "
+            f"{len(self.headgroups)} headgroups, {len(self.side_chains)} sidechains"
+        )
 
         self.side_chains_to_mass = {
             key: value["mono_mass"] for key, value in self.side_chains.items()

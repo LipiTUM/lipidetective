@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 from pathlib import Path
 from typing import Any
 
@@ -46,6 +47,7 @@ class PredictionDataset(Dataset[dict[str, Any]]):
 
     def process_mzml(self) -> list[dict[str, Any]]:
         spectra = list(mzml.read(self.file_path))
+        logging.debug(f"Read {len(spectra)} total scans from {self.file_name}")
         ms2_spectra: list[dict[str, Any]] = []
         for spectrum in spectra:
             if spectrum["ms level"] == 2:
@@ -70,6 +72,9 @@ class PredictionDataset(Dataset[dict[str, Any]]):
                     "polarity": polarity,
                 }
                 ms2_spectra.append(spectrum_entry)
+        no_polarity = sum(1 for s in ms2_spectra if s["polarity"] is None)
+        if no_polarity:
+            logging.debug(f"{no_polarity}/{len(ms2_spectra)} MS2 spectra have no polarity info")
         return ms2_spectra
 
     def process_json(self) -> list[dict[str, Any]]:

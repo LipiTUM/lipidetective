@@ -63,5 +63,8 @@ transformer:
   output_seq_length: 11
 # wandb: # Uncomment if you want to use wandb
 #  group: 'Debugging'
+# logging:
+#   level: INFO     # DEBUG | INFO | WARNING | ERROR | CRITICAL
+#   file: null      # Optional: path to log file
 comment: 'Info on the purpose of the current run'
 ...

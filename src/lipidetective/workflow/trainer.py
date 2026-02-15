@@ -4,6 +4,7 @@ import copy
 import logging
 import os
 from datetime import datetime
+from pathlib import Path
 from random import shuffle
 from typing import Any, NamedTuple
 
@@ -12,7 +13,6 @@ import pandas as pd
 import pytorch_lightning as pl
 import ray
 import torch
-import wandb
 from pytorch_lightning import loggers as pl_loggers
 from pytorch_lightning.callbacks import Callback
 from ray import tune
@@ -23,6 +23,7 @@ from ray.tune.logger import LoggerCallback
 from ray.tune.schedulers import ASHAScheduler
 from torch.utils.data import DataLoader
 
+import wandb
 from lipidetective.helpers.lipid_library import LipidLibrary
 from lipidetective.helpers.logging import CustomLogger, Evaluator, PredictionLogger
 from lipidetective.helpers.utils import (
@@ -159,7 +160,7 @@ class Trainer:
 
             trainer = pl.Trainer(
                 max_epochs=self.config["training"]["epochs"],
-                callbacks=PrintingCallbacks(),
+                callbacks=LearningRateLoggingCallback(),
                 devices=self.devices,
                 default_root_dir=self.output_folder,
                 logger=[custom_logger, tb_logger, csv_logger],
@@ -223,7 +224,7 @@ class Trainer:
 
         trainer = pl.Trainer(
             max_epochs=self.config["training"]["epochs"],
-            callbacks=PrintingCallbacks(),
+            callbacks=LearningRateLoggingCallback(),
             logger=custom_logger,
             devices=self.devices,
             default_root_dir=self.output_folder,
@@ -276,7 +277,7 @@ class Trainer:
         )
 
         trainer = pl.Trainer(
-            callbacks=PrintingCallbacks(),
+            callbacks=LearningRateLoggingCallback(),
             logger=custom_logger,
             devices=1,
             deterministic=True,
@@ -309,7 +310,7 @@ class Trainer:
         )
 
         trainer = pl.Trainer(
-            callbacks=PrintingCallbacks(),
+            callbacks=LearningRateLoggingCallback(),
             logger=pred_logger,
             devices=1,
             deterministic=True,
@@ -318,10 +319,14 @@ class Trainer:
         )
 
         pred_files = self.get_pred_files()
+        logging.info(f"Processing {len(pred_files)} file(s) for prediction.")
 
-        for file in pred_files:
+        for file_idx, file in enumerate(pred_files, 1):
             dataset = PredictionDataset(file, self.config)
-            logging.info(f"Dataset selected for prediction contains {len(dataset)} spectra.")
+            logging.info(
+                f"Predicting file {file_idx}/{len(pred_files)}: "
+                f"{Path(file).name} ({len(dataset)} spectra)"
+            )
             data_loader = DataLoader(dataset, batch_size=batch_size, num_workers=self.nr_workers)
 
             trainer.predict(model=pl_module, dataloaders=data_loader)
@@ -472,6 +477,7 @@ class Trainer:
         whole dataset is too big to be loaded at once."""
 
         if self.config["files"]["val_input"]:
+            logging.info("Using separate train/val input files for data split.")
             with h5py.File(self.config["files"]["train_input"], "r") as hdf5_file:
                 trainset_names = list(hdf5_file["all_datasets"].keys())
                 shuffle(trainset_names)
@@ -508,10 +514,16 @@ class Trainer:
 
             # Sort dataset names into train and validation set
             if self.config["files"]["splitting_instructions"]:
-                # Split via instructions in YAML file
+                logging.info(
+                    f"Splitting {len(all_dataset_names)} spectra via instructions: "
+                    f"{self.config['files']['splitting_instructions']}"
+                )
                 return self.split_data_via_instructions(all_dataset_names)
             else:
-                # Split via lipid species into folds for cross-validation
+                logging.info(
+                    f"Splitting {len(all_dataset_names)} spectra by lipid species "
+                    f"into {self.config['training']['k']} folds."
+                )
                 return self.split_data_by_lipid_species(all_dataset_names)
 
         return DataSplit(
@@ -548,6 +560,12 @@ class Trainer:
 
         trainset_lipids = self.get_unique_lipids(trainset_names)
         valset_lipids = self.get_unique_lipids(valset_names)
+
+        logging.info(
+            f"Instruction split: train={len(trainset_names)} spectra "
+            f"({len(trainset_lipids)} lipids), val={len(valset_names)} spectra "
+            f"({len(valset_lipids)} lipids)"
+        )
 
         return DataSplit(
             trainsets=[trainset],
@@ -609,6 +627,15 @@ class Trainer:
             valset_lipids = self.get_unique_lipids(fold)
             valsets_lipids.append(valset_lipids)
 
+        for fold_idx in range(nr_folds):
+            logging.info(
+                f"Fold {fold_idx + 1}/{nr_folds}: "
+                f"train={len(trainset_names[fold_idx])} spectra "
+                f"({len(trainsets_lipids[fold_idx])} lipids), "
+                f"val={len(valset_names[fold_idx])} spectra "
+                f"({len(valsets_lipids[fold_idx])} lipids)"
+            )
+
         return DataSplit(
             trainsets=trainsets,
             valsets=valsets,
@@ -630,11 +657,11 @@ class ModifiedASHAScheduler(ASHAScheduler):
         super().on_trial_add(trial_runner, trial)
 
 
-class PrintingCallbacks(Callback):
+class LearningRateLoggingCallback(Callback):
     def on_train_epoch_start(self, trainer: pl.Trainer, pl_module: pl.LightningModule) -> None:
         scheduler = pl_module.lr_schedulers()
         if scheduler is not None and hasattr(scheduler, "get_last_lr"):
-            print(f"\tLearning rate: {scheduler.get_last_lr()[0]}")
+            logging.info(f"Learning rate: {scheduler.get_last_lr()[0]}")
 
 
 class CustomLoggerCallback(LoggerCallback):
@@ -644,7 +671,7 @@ class CustomLoggerCallback(LoggerCallback):
         self.output_folder = output_folder
 
     def on_trial_complete(self, iteration: int, trials: Any, trial: Trial, **info: Any) -> None:
-        print(f"Trial {trial} successfully completed.")
+        logging.info(f"Trial {trial} successfully completed.")
         csv_metrics_file = f"{trial.logdir}/csv_logger/metrics.csv"
         metrics = pd.read_csv(csv_metrics_file)
         trial_id = int(trial.trial_id.split("_")[-1])

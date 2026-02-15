@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import logging
 import os
 from typing import Any
 
@@ -61,6 +62,12 @@ def add_spectrum_to_hdf5(
 
 
 if __name__ == "__main__":
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s %(levelname)s: %(message)s",
+        datefmt="%d/%m/%Y - %H:%M:%S",
+    )
+
     input_dir, output_dir = parse_arguments()
 
     all_filepaths = []
@@ -75,18 +82,18 @@ if __name__ == "__main__":
     hdf5_file = h5py.File(hdf5_file_path, "w")
     hdf5_file.create_group("/all_datasets")
 
-    print("Processing:")
+    logging.info("Processing:")
     for idx, file in enumerate(all_filepaths):
         file_name = file.split("/")[-1]
-        print(file_name)
+        logging.info(file_name)
 
         spectra = list(mzml.read(file))
         for spectrum in spectra:
             if spectrum["ms level"] == 2:
                 add_spectrum_to_hdf5(spectrum, idx, file_name, hdf5_file)
 
-    print(f"HDF5 file contains {len(hdf5_file['/all_datasets'])} processed MS2 spectra.")
+    logging.info(f"HDF5 file contains {len(hdf5_file['/all_datasets'])} processed MS2 spectra.")
 
     hdf5_file.close()
 
-    print(f"HDF5 file saved at {hdf5_file_path}")
+    logging.info(f"HDF5 file saved at {hdf5_file_path}")

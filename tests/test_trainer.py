@@ -7,8 +7,8 @@ import pytest
 
 from lipidetective.workflow.trainer import (
     CustomLoggerCallback,
+    LearningRateLoggingCallback,
     ModifiedASHAScheduler,
-    PrintingCallbacks,
     Trainer,
 )
 
@@ -156,12 +156,12 @@ class TestCheckParameterForTuning:
         assert trainer_instance.config["training"]["learning_rate"] == 0.001
 
 
-class TestPrintingCallbacks:
-    """Tests for PrintingCallbacks class."""
+class TestLearningRateLoggingCallback:
+    """Tests for LearningRateLoggingCallback class."""
 
     def test_instantiation(self):
         """Should instantiate without error."""
-        callback = PrintingCallbacks()
+        callback = LearningRateLoggingCallback()
         assert callback is not None
 
 
