@@ -27,7 +27,9 @@ class PredictionDataset(Dataset[dict[str, Any]]):
 
     def __getitem__(self, index: int) -> dict[str, Any]:
         sample = self.file[index]
-        features = self.get_n_highest_peaks(sample["mz"], sample["intensity"], sample["precursor"])
+        features = self.get_n_highest_peaks(
+            np.asarray(sample["mz"]), np.asarray(sample["intensity"]), sample["precursor"]
+        )
         spectrum_info = {
             "index": sample["index"],
             "file": self.file_name,

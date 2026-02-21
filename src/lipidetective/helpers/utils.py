@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import argparse
 import logging
-import math
 import os
 import random
 from pathlib import Path
@@ -181,12 +180,12 @@ def is_main_process() -> bool:
     return "LOCAL_RANK" not in os.environ.keys() and "NODE_RANK" not in os.environ.keys()
 
 
-def truncate(values: np.ndarray, decimal_places: int = 0) -> list[float]:
+def truncate(values: np.ndarray, decimal_places: int = 0) -> np.ndarray:
     factor = 10**decimal_places
     # Guard against float representation error where x * factor lands just
     # below an integer (e.g. 200.0 * 10 → 1999.9999999999998).
     eps = 1e-9
-    return [(math.floor(x * factor + eps) / factor) for x in values]
+    return np.asarray(np.floor(values * factor + eps) / factor)
 
 
 def extract_model_metadata(config: dict[str, Any]) -> dict[str, Any]:

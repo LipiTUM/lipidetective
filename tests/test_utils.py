@@ -39,7 +39,7 @@ class TestTruncate:
 
         values = np.array([1.2345, 2.6789, 3.9999])
         result = truncate(values, decimal_places=0)
-        assert result == [1.0, 2.0, 3.0]
+        np.testing.assert_array_equal(result, [1.0, 2.0, 3.0])
 
     def test_truncate_two_decimal_places(self):
         """Test truncating to two decimal places."""
@@ -47,7 +47,7 @@ class TestTruncate:
 
         values = np.array([1.2345, 2.6789, 3.9999])
         result = truncate(values, decimal_places=2)
-        assert result == [1.23, 2.67, 3.99]
+        np.testing.assert_array_almost_equal(result, [1.23, 2.67, 3.99])
 
 
 class TestLipidClassDetection:
