@@ -4,12 +4,78 @@ from typing import Any
 
 import h5py
 import numpy as np
-import pandas as pd
 import torch
 from torch.utils.data import Dataset
 
 from lipidetective.helpers.lipid_library import LipidLibrary
 from lipidetective.helpers.utils import truncate
+
+
+class PrecomputedDataset(Dataset[dict[str, Any]]):
+    """In-memory dataset that loads pre-computed features from a Parquet file.
+
+    The Parquet file is created by ``precompute_dataset.py`` and contains integer
+    m/z features plus metadata (lipid_species, adduct, polarity, precursor).
+    Because the file is small (~10 MB compressed for 230K spectra), it is loaded
+    entirely into memory at init time, making ``__getitem__`` a simple lookup.
+    """
+
+    def __init__(
+        self,
+        config: dict[str, Any],
+        dataset_names: list[str],
+        lipid_librarian: LipidLibrary,
+        file_path: str,
+    ):
+        import pyarrow.parquet as pq
+
+        self.dataset_names = dataset_names
+        self.dataset_len = len(dataset_names)
+        self.config = config
+        self.lipid_librarian = lipid_librarian
+
+        # Load full Parquet table and index by dataset_name
+        table = pq.read_table(file_path)
+        all_names = table.column("dataset_name").to_pylist()
+        name_set = set(dataset_names)
+
+        self.features_cache: dict[str, list[int]] = {}
+        self.attrs_cache: dict[str, dict[str, Any]] = {}
+        for i, name in enumerate(all_names):
+            if name in name_set:
+                self.features_cache[name] = table.column("features")[i].as_py()
+                self.attrs_cache[name] = {
+                    "lipid_species": table.column("lipid_species")[i].as_py(),
+                    "adduct": table.column("adduct")[i].as_py(),
+                }
+
+        missing = name_set - self.features_cache.keys()
+        if missing:
+            raise ValueError(
+                f"{len(missing)} dataset name(s) not found in {file_path}: {sorted(missing)}"
+            )
+
+    def __len__(self) -> int:
+        return self.dataset_len
+
+    def __getitem__(self, index: int) -> dict[str, Any]:
+        name = self.dataset_names[index]
+        features = torch.LongTensor(self.features_cache[name])
+        attrs = self.attrs_cache[name]
+
+        sample_label, sample_info = self.lipid_librarian.get_transformer_label(
+            attrs["lipid_species"],
+            attrs["adduct"],
+            self.config["transformer"]["output_seq_length"],
+        )
+        sample_info["dataset_name"] = name
+
+        return {
+            "features": features,
+            "label": sample_label,
+            "info": sample_info,
+            "dataset_path": torch.IntTensor([index]),
+        }
 
 
 class H5Dataset(Dataset[dict[str, Any]]):
@@ -61,10 +127,10 @@ class H5Dataset(Dataset[dict[str, Any]]):
 
         features: torch.Tensor
 
-        if self.network_type == "transformer":
+        if self.network_type in ("transformer", "lstm"):
             # Extract only sorted m/z values as we don't need the intensities for the transformer input
             mz_values = peaks[:, 0]
-            features = torch.IntTensor(np.rint(mz_values * (10**self.decimal_accuracy)))
+            features = torch.LongTensor(np.rint(mz_values * (10**self.decimal_accuracy)))
 
             # Filter out peaks with m/z >= max_mz (outside embedding vocab range)
             max_index = self.config["input_embedding"]["max_mz"] * 10**self.decimal_accuracy
@@ -154,14 +220,10 @@ class H5Dataset(Dataset[dict[str, Any]]):
 
         mz_array_trunc = truncate(mz_array, self.decimal_accuracy)
 
-        mz_intensity_array = pd.DataFrame(
-            {"m/z_array": mz_array_trunc, "intensity_array": intensity_array}
-        )
-        mz_intensity_array = (
-            mz_intensity_array.groupby("m/z_array").intensity_array.sum().reset_index()
-        )
+        unique_mz, inverse = np.unique(mz_array_trunc, return_inverse=True)
+        summed_intensities = np.bincount(inverse, weights=intensity_array)
 
-        spectrum_trunc: np.ndarray = np.asarray(mz_intensity_array.to_numpy())
+        spectrum_trunc = np.column_stack((unique_mz, summed_intensities))
         sorted_spectrum: np.ndarray = spectrum_trunc[np.argsort(-spectrum_trunc[:, 1])]
 
         return sorted_spectrum

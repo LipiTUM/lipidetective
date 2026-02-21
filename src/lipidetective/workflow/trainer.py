@@ -34,7 +34,7 @@ from lipidetective.helpers.utils import (
 )
 from lipidetective.helpers.visualizations import generate_plots
 from lipidetective.models.random_forest import RandomForest
-from lipidetective.workflow.h5_dataset import H5Dataset
+from lipidetective.workflow.h5_dataset import H5Dataset, PrecomputedDataset
 from lipidetective.workflow.lightning_module import LightningModule
 from lipidetective.workflow.prediction_dataset import PredictionDataset
 
@@ -42,8 +42,8 @@ from lipidetective.workflow.prediction_dataset import PredictionDataset
 class DataSplit(NamedTuple):
     """Data splits for k-fold cross-validation or train/val split."""
 
-    trainsets: list[H5Dataset]
-    valsets: list[H5Dataset]
+    trainsets: list[H5Dataset | PrecomputedDataset]
+    valsets: list[H5Dataset | PrecomputedDataset]
     trainset_lipids: list[list[str]]
     valset_lipids: list[list[str]]
 
@@ -74,6 +74,7 @@ class Trainer:
             self.lipid_librarian = LipidLibrary()
             self.evaluator = Evaluator(self.lipid_librarian)
 
+            self.accelerator = "auto"
             if torch.cuda.is_available():
                 # This sets a list of GPU names so one can choose exactly which GPUs to use, otherwise it uses all
                 if self.config["cuda"]["gpu_nr"]:
@@ -83,6 +84,10 @@ class Trainer:
                     )
                 else:
                     self.devices = "auto"
+            elif torch.backends.mps.is_available() and self.config["cuda"].get("use_mps", True):
+                self.devices = 1
+                self.accelerator = "mps"
+                logging.info("MPS (Apple Silicon GPU) detected, using MPS accelerator.")
             else:
                 self.devices = "auto"
 
@@ -91,6 +96,34 @@ class Trainer:
                 if self.config["training"]["nr_workers"]
                 else 0
             )
+
+    def _get_dataset_names(self, file_path: str) -> list[str]:
+        """Get dataset names from HDF5 or Parquet file."""
+        if self.config.get("files", {}).get("precomputed", False):
+            import pyarrow as pa
+            import pyarrow.parquet as pq
+
+            table = pq.read_table(file_path, columns=["dataset_name"])
+            if not pa.types.is_string(table.schema.field("dataset_name").type):
+                raise ValueError(
+                    f"Corrupted dataset_name column in {file_path}: "
+                    f"expected string type, got {table.schema.field('dataset_name').type}"
+                )
+            return table.column("dataset_name").to_pylist()  # type: ignore[no-any-return]  # pyarrow types to_pylist() as list[Any]
+        with h5py.File(file_path, "r") as hdf5_file:
+            return list(hdf5_file["all_datasets"].keys())
+
+    def _make_dataset(
+        self, dataset_names: list[str], file_path: str
+    ) -> H5Dataset | PrecomputedDataset:
+        """Create the appropriate dataset based on whether precomputed data is available."""
+        if self.config.get("files", {}).get("precomputed", False):
+            logging.info(
+                f"Using PrecomputedDataset ({len(dataset_names)} spectra from {file_path})"
+            )
+            return PrecomputedDataset(self.config, dataset_names, self.lipid_librarian, file_path)
+        logging.info(f"Using H5Dataset ({len(dataset_names)} spectra from {file_path})")
+        return H5Dataset(self.config, dataset_names, self.lipid_librarian, file_path)
 
     def train_with_validation(self) -> None:
         data_split = self.perform_data_split()
@@ -161,6 +194,7 @@ class Trainer:
             trainer = pl.Trainer(
                 max_epochs=self.config["training"]["epochs"],
                 callbacks=LearningRateLoggingCallback(),
+                accelerator=self.accelerator,
                 devices=self.devices,
                 default_root_dir=self.output_folder,
                 logger=[custom_logger, tb_logger, csv_logger],
@@ -170,12 +204,15 @@ class Trainer:
 
             trainer.fit(model=pl_module, train_dataloaders=train_loader, val_dataloaders=val_loader)
 
-            if self.config["model"] == "transformer":
+            if self.config["model"] in ("transformer", "lstm"):
                 custom_logger.save_lipid_wise_metrics(
-                    pl_module.train_custom_accuracy.metric.get_confusion_matrix(),  # type: ignore[operator, union-attr]
-                    trainset_lipids[fold],
-                    pl_module.val_custom_accuracy.metric.get_confusion_matrix(),  # type: ignore[operator, union-attr]
-                    valset_lipids[fold],
+                    # Train confusion matrix disabled: train_custom_accuracy is not updated
+                    # during training_step for performance reasons. To re-enable, implement
+                    # a post-training evaluation pass and uncomment:
+                    # pl_module.train_custom_accuracy.metric.get_confusion_matrix(),  # type: ignore[operator, union-attr]
+                    # trainset_lipids[fold],
+                    val_confusion_matrix=pl_module.val_custom_accuracy.metric.get_confusion_matrix(),  # type: ignore[operator, union-attr]
+                    val_lipids=valset_lipids[fold],
                 )
 
             if self.config["workflow"]["save_model"]:
@@ -187,12 +224,9 @@ class Trainer:
                     pl_module.save_model(self.output_folder)
 
     def train_without_validation(self) -> None:
-        with h5py.File(self.config["files"]["train_input"], "r") as hdf5_file:
-            dataset_names = list(hdf5_file["all_datasets"].keys())
+        dataset_names = self._get_dataset_names(self.config["files"]["train_input"])
 
-        dataset = H5Dataset(
-            self.config, dataset_names, self.lipid_librarian, self.config["files"]["train_input"]
-        )
+        dataset = self._make_dataset(dataset_names, self.config["files"]["train_input"])
         dataset_lipids = self.get_unique_lipids(dataset_names)
 
         logging.info(f"Dataset selected for training contains {len(dataset)} spectra.")
@@ -225,6 +259,7 @@ class Trainer:
         trainer = pl.Trainer(
             max_epochs=self.config["training"]["epochs"],
             callbacks=LearningRateLoggingCallback(),
+            accelerator=self.accelerator,
             logger=custom_logger,
             devices=self.devices,
             default_root_dir=self.output_folder,
@@ -233,11 +268,14 @@ class Trainer:
 
         trainer.fit(model=pl_module, train_dataloaders=data_loader)
 
-        if self.config["model"] == "transformer":
-            custom_logger.save_lipid_wise_metrics(
-                pl_module.train_custom_accuracy.metric.get_confusion_matrix(),  # type: ignore[operator, union-attr]
-                dataset_lipids,
-            )
+        # Train confusion matrix disabled: train_custom_accuracy is not updated
+        # during training_step for performance reasons. To re-enable, implement
+        # a post-training evaluation pass and uncomment:
+        # if self.config["model"] in ("transformer", "lstm"):
+        #     custom_logger.save_lipid_wise_metrics(
+        #         pl_module.train_custom_accuracy.metric.get_confusion_matrix(),  # type: ignore[operator, union-attr]
+        #         dataset_lipids,
+        #     )
 
         if self.config["workflow"]["save_model"]:
             pl_module.save_model(self.output_folder)
@@ -247,12 +285,9 @@ class Trainer:
         This loop is for analyzing the models performance on a previously unseen labeled test dataset.
         """
 
-        with h5py.File(self.config["files"]["test_input"], "r") as hdf5_file:
-            dataset_names = list(hdf5_file["all_datasets"].keys())
+        dataset_names = self._get_dataset_names(self.config["files"]["test_input"])
 
-        dataset = H5Dataset(
-            self.config, dataset_names, self.lipid_librarian, self.config["files"]["test_input"]
-        )
+        dataset = self._make_dataset(dataset_names, self.config["files"]["test_input"])
         dataset_lipids = self.get_unique_lipids(dataset_names)
 
         logging.info(f"Dataset selected for testing contains {len(dataset)} spectra.")
@@ -278,6 +313,7 @@ class Trainer:
 
         trainer = pl.Trainer(
             callbacks=LearningRateLoggingCallback(),
+            accelerator=self.accelerator,
             logger=custom_logger,
             devices=1,
             deterministic=True,
@@ -287,7 +323,7 @@ class Trainer:
 
         trainer.test(model=pl_module, dataloaders=data_loader)
 
-        if self.config["model"] == "transformer":
+        if self.config["model"] in ("transformer", "lstm"):
             custom_logger.save_lipid_wise_metrics(
                 test_confusion_matrix=pl_module.test_custom_accuracy.metric.get_confusion_matrix(),  # type: ignore[operator, union-attr]
                 test_lipids=dataset_lipids,
@@ -311,6 +347,7 @@ class Trainer:
 
         trainer = pl.Trainer(
             callbacks=LearningRateLoggingCallback(),
+            accelerator=self.accelerator,
             logger=pred_logger,
             devices=1,
             deterministic=True,
@@ -434,6 +471,7 @@ class Trainer:
 
         trainer = pl.Trainer(
             max_epochs=num_epochs,
+            accelerator=self.accelerator,
             devices=self.devices,
             default_root_dir=self.output_folder,
             callbacks=[TuneReportCheckpointCallback(val_metrics, on="validation_end")],
@@ -448,7 +486,7 @@ class Trainer:
         self.check_parameter_for_tuning(config_section="training", parameter="lr_step")
         self.check_parameter_for_tuning(config_section="training", parameter="batch")
 
-        if self.config["model"] == "transformer":
+        if self.config["model"] in ("transformer", "lstm"):
             self.check_parameter_for_tuning(config_section="transformer", parameter="d_model")
             self.check_parameter_for_tuning(config_section="transformer", parameter="num_heads")
             self.check_parameter_for_tuning(config_section="transformer", parameter="dropout")
@@ -478,29 +516,13 @@ class Trainer:
 
         if self.config["files"]["val_input"]:
             logging.info("Using separate train/val input files for data split.")
-            with h5py.File(self.config["files"]["train_input"], "r") as hdf5_file:
-                trainset_names = list(hdf5_file["all_datasets"].keys())
-                shuffle(trainset_names)
-                trainsets = [
-                    H5Dataset(
-                        self.config,
-                        trainset_names,
-                        self.lipid_librarian,
-                        self.config["files"]["train_input"],
-                    )
-                ]
+            trainset_names = self._get_dataset_names(self.config["files"]["train_input"])
+            shuffle(trainset_names)
+            trainsets = [self._make_dataset(trainset_names, self.config["files"]["train_input"])]
 
-            with h5py.File(self.config["files"]["val_input"], "r") as hdf5_file:
-                valset_names = list(hdf5_file["all_datasets"].keys())
-                shuffle(valset_names)
-                valsets = [
-                    H5Dataset(
-                        self.config,
-                        valset_names,
-                        self.lipid_librarian,
-                        self.config["files"]["val_input"],
-                    )
-                ]
+            valset_names = self._get_dataset_names(self.config["files"]["val_input"])
+            shuffle(valset_names)
+            valsets = [self._make_dataset(valset_names, self.config["files"]["val_input"])]
 
             trainset_lipids = [
                 self.get_unique_lipids(trainset_names)
@@ -509,8 +531,7 @@ class Trainer:
 
         else:
             # Get all dataset names
-            with h5py.File(self.config["files"]["train_input"], "r") as hdf5_file:
-                all_dataset_names = list(hdf5_file["all_datasets"].keys())
+            all_dataset_names = self._get_dataset_names(self.config["files"]["train_input"])
 
             # Sort dataset names into train and validation set
             if self.config["files"]["splitting_instructions"]:
@@ -551,12 +572,8 @@ class Trainer:
         shuffle(valset_names)
 
         # Create HDF5Dataset objects for the train and validation set
-        trainset = H5Dataset(
-            self.config, trainset_names, self.lipid_librarian, self.config["files"]["train_input"]
-        )
-        valset = H5Dataset(
-            self.config, valset_names, self.lipid_librarian, self.config["files"]["train_input"]
-        )
+        trainset = self._make_dataset(trainset_names, self.config["files"]["train_input"])
+        valset = self._make_dataset(valset_names, self.config["files"]["train_input"])
 
         trainset_lipids = self.get_unique_lipids(trainset_names)
         valset_lipids = self.get_unique_lipids(valset_names)
@@ -612,17 +629,13 @@ class Trainer:
         valsets_lipids = []
 
         for fold in trainset_names:
-            dataset = H5Dataset(
-                self.config, fold, self.lipid_librarian, self.config["files"]["train_input"]
-            )
+            dataset = self._make_dataset(fold, self.config["files"]["train_input"])
             trainsets.append(dataset)
             trainset_lipids = self.get_unique_lipids(fold)
             trainsets_lipids.append(trainset_lipids)
 
         for fold in valset_names:
-            dataset = H5Dataset(
-                self.config, fold, self.lipid_librarian, self.config["files"]["train_input"]
-            )
+            dataset = self._make_dataset(fold, self.config["files"]["train_input"])
             valsets.append(dataset)
             valset_lipids = self.get_unique_lipids(fold)
             valsets_lipids.append(valset_lipids)

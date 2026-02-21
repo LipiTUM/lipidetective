@@ -58,6 +58,7 @@ dev = [
     "types-seaborn>=0.13.2.20251221",
     "ipykernel>=6.29.0",
     "ipywidgets>=8.1.0",
+    "pre-commit>=4.5.1",
 ]
 docs = [
     "sphinx>=7.2.6",

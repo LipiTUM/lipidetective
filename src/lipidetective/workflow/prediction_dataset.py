@@ -27,7 +27,9 @@ class PredictionDataset(Dataset[dict[str, Any]]):
 
     def __getitem__(self, index: int) -> dict[str, Any]:
         sample = self.file[index]
-        features = self.get_n_highest_peaks(sample["mz"], sample["intensity"], sample["precursor"])
+        features = self.get_n_highest_peaks(
+            np.asarray(sample["mz"]), np.asarray(sample["intensity"]), sample["precursor"]
+        )
         spectrum_info = {
             "index": sample["index"],
             "file": self.file_name,
@@ -111,13 +113,13 @@ class PredictionDataset(Dataset[dict[str, Any]]):
 
         spectrum_peaks = sorted_spectrum[:n_peaks]
         mz_values = spectrum_peaks[:, 0]
-        features = torch.IntTensor(np.rint(mz_values * (10**decimal_accuracy)))
+        features = torch.LongTensor(np.rint(mz_values * (10**decimal_accuracy)))
 
         # Filter out peaks with m/z >= max_mz (outside embedding vocab range)
         max_index = self.config["input_embedding"]["max_mz"] * 10**decimal_accuracy
-        features = torch.IntTensor(features[features < max_index])
+        features = torch.LongTensor(features[features < max_index])
         if len(features) < n_peaks:
-            features = torch.IntTensor(
+            features = torch.LongTensor(
                 torch.nn.functional.pad(features, (0, n_peaks - len(features)))
             )
 

@@ -21,6 +21,8 @@ files:
    output: 'output'
    # Relative to config/
    splitting_instructions: 'validation_splits/train_val_split.yaml'
+   precomputed: False  # Set to True to use pre-computed Parquet features instead of raw HDF5.
+                       # Parquet files must be generated with precompute_dataset.py first.
 workflow:
   train: False
   validate: False

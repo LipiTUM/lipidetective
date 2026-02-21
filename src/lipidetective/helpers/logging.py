@@ -225,7 +225,7 @@ class CustomLogger(Logger):
     ) -> None:
         super().__init__()
         self.model = config["model"]
-        if self.model == "transformer":
+        if self.model in ("transformer", "lstm"):
             self.output_seq_length = (
                 config["transformer"]["output_seq_length"] - 1
             )  # -1 because we don't save the <SOS> token
@@ -269,7 +269,7 @@ class CustomLogger(Logger):
         csv_path = os.path.join(self.save_path, f"{mode}_metrics.csv")
         predictions_path = os.path.join(self.save_path, f"{mode}_predictions.csv")
 
-        if self.model == "transformer":
+        if self.model in ("transformer", "lstm"):
             with open(csv_path, "w") as f:
                 writer = csv.writer(f)
                 if mode == "test":
@@ -357,15 +357,15 @@ class CustomLogger(Logger):
             with open(self.train_csv_path, "a") as f:
                 writer = csv.writer(f)
 
-                if self.model == "transformer":
+                if self.model in ("transformer", "lstm"):
+                    train_acc = metrics.get("customaccuracy_train_accuracy_epoch")
+                    train_mean_acc = metrics.get("customaccuracy_train_mean_accuracy_epoch")
                     writer.writerow(
                         [
                             metrics["epoch"],
                             metrics["train_loss_epoch"],
-                            "{:.2f}".format(metrics["customaccuracy_train_accuracy_epoch"] * 100),
-                            "{:.2f}".format(
-                                metrics["customaccuracy_train_mean_accuracy_epoch"] * 100
-                            ),
+                            f"{train_acc * 100:.2f}" if train_acc is not None else "N/A",
+                            f"{train_mean_acc * 100:.2f}" if train_mean_acc is not None else "N/A",
                         ]
                     )
                 else:
@@ -386,7 +386,7 @@ class CustomLogger(Logger):
             with open(self.val_csv_path, "a") as f:
                 writer = csv.writer(f)
 
-                if self.model == "transformer":
+                if self.model in ("transformer", "lstm"):
                     writer.writerow(
                         [
                             metrics["epoch"],
@@ -415,7 +415,7 @@ class CustomLogger(Logger):
             with open(self.test_csv_path, "a") as f:
                 writer = csv.writer(f)
 
-                if self.model == "transformer":
+                if self.model in ("transformer", "lstm"):
                     writer.writerow(
                         [
                             step,
@@ -433,7 +433,7 @@ class CustomLogger(Logger):
             if batch_idx % self.log_every_n_steps == 0:
                 preds_vs_labels = cat_metric.compute().detach().cpu().numpy()
 
-                if self.model == "transformer":
+                if self.model in ("transformer", "lstm"):
                     preds_vs_labels = self.transform_token_predictions_to_string(
                         preds_vs_labels, self.trainset_names
                     )
@@ -445,7 +445,7 @@ class CustomLogger(Logger):
         elif workflow == "val":
             preds_vs_labels = cat_metric.compute().detach().cpu().numpy()
 
-            if self.model == "transformer":
+            if self.model in ("transformer", "lstm"):
                 preds_vs_labels = self.transform_token_predictions_to_string(
                     preds_vs_labels, self.valset_names
                 )
@@ -457,7 +457,7 @@ class CustomLogger(Logger):
         elif workflow == "test":
             preds_vs_labels = cat_metric.compute().detach().cpu().numpy()
 
-            if self.model == "transformer":
+            if self.model in ("transformer", "lstm"):
                 preds_vs_labels = self.transform_test_token_predictions_to_string(
                     preds_vs_labels, self.testset_names
                 )
@@ -552,19 +552,24 @@ class CustomLogger(Logger):
         # Optional. Any code that needs to be run after training finishes goes here
         if self.do_training:
             train_csv = pd.read_csv(self.train_csv_path)
-            self.plot_loss_and_accuracy(train_csv, "training", self.save_path)
 
-            if not self.model == "transformer":
+            if self.model not in ("transformer", "lstm"):
+                self.plot_loss_and_accuracy(train_csv, "training", self.save_path)
                 self.plot_loss_and_mae(train_csv, "training", self.save_path)
                 self.plot_loss_and_r2(train_csv, "training", self.save_path)
             else:
-                self.plot_loss_and_both_accuracies(train_csv, "training", self.save_path)
+                # Accuracy is not tracked during training_step for performance reasons,
+                # so only the loss plot is generated.
+                self.plot_loss(train_csv, "training", self.save_path)
+                # To re-enable accuracy plots, restore train_custom_accuracy updates in
+                # training_step and uncomment:
+                # self.plot_loss_and_both_accuracies(train_csv, "training", self.save_path)
 
         if self.do_validation:
             val_csv = pd.read_csv(self.val_csv_path)
             self.plot_loss_and_accuracy(val_csv, "validation", self.save_path)
 
-            if not self.model == "transformer":
+            if self.model not in ("transformer", "lstm"):
                 self.plot_loss_and_mae(val_csv, "validation", self.save_path)
                 self.plot_loss_and_r2(val_csv, "validation", self.save_path)
             else:
@@ -656,6 +661,28 @@ class CustomLogger(Logger):
         calculated_scores_df.set_index("lipid", inplace=True)
 
         return calculated_scores_df
+
+    def plot_loss(self, df: pd.DataFrame, workflow: str, output_folder: str) -> None:
+        plot_name = (
+            f"plot_loss_{workflow}_{self.fold}.png"
+            if self.fold != "."
+            else f"plot_loss_{workflow}.png"
+        )
+
+        df.index = df.epoch
+
+        figure = plt.figure(figsize=(12, 10))
+
+        ax1 = sns.lineplot(data=df.loss, color="orange")
+        plt.ylabel("Loss", fontsize=14)
+        ax1.set_yscale("log")
+        plt.xlabel("Epoch", fontsize=14)
+        ax1.legend(["Loss"], loc=(1.15, 0.92), frameon=False, fontsize=13)
+
+        plt.title("Loss per Epoch", fontsize=16)
+        plt.tight_layout(w_pad=4)
+        plt.savefig(os.path.join(output_folder, plot_name), dpi=300)
+        plt.close(figure)
 
     def plot_loss_and_accuracy(self, df: pd.DataFrame, workflow: str, output_folder: str) -> None:
         plot_name = (
@@ -834,7 +861,7 @@ class PredictionLogger(Logger):
     def __init__(self, save_dir: str, log_every_n_steps: int, config: dict[str, Any]) -> None:
         super().__init__()
         self.model = config["model"]
-        if self.model == "transformer":
+        if self.model in ("transformer", "lstm"):
             self.output_seq_length = (
                 config["transformer"]["output_seq_length"] - 1
             )  # -1 because we don't save the <SOS> token

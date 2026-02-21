@@ -1,0 +1,62 @@
+---
+model: 'lstm'
+cuda:
+  gpu_nr: [1]
+
+# File paths — same structure as transformer config
+files:
+   train_input: 'processed/train_dataset.hdf5'
+   val_input: 'processed/val_dataset.hdf5'
+   test_input: 'processed/test_dataset.hdf5'
+   predict_input: 'raw/sample.mzML'
+   saved_model: 'lipidetective_lstm_model.pth'
+   model_config: null
+   output: 'output'
+   splitting_instructions: 'validation_splits/train_val_split.yaml'
+   precomputed: False  # Set to True to use pre-computed Parquet features instead of raw HDF5.
+                       # Parquet files must be generated with precompute_dataset.py first.
+workflow:
+  train: True
+  validate: True
+  test: False
+  tune: False
+  predict: False
+  save_model: True
+  load_model: False
+  log_every_n_steps: 10
+training:
+  k: 6
+  learning_rate: 0.004
+  lr_step: 2
+  epochs: 15
+  batch: 512
+  nr_workers: 0
+test:
+  batch: 512
+  confidence_score: True
+predict:
+  output: "best_prediction"
+  batch: 512
+  save_spectrum: False
+  confidence_threshold: 0.98
+  keep_empty: False
+  keep_wrong_polarity_preds: False
+# Uses the same input_embedding and transformer config sections as the transformer model.
+# The LSTM encoder reuses d_model, num_layers, and dropout from the transformer section.
+# num_heads and ffn_hidden are only used by the transformer decoder.
+# precomputed: False  # Set to True to load pre-computed Parquet features instead of raw HDF5.
+#                     # Parquet files must be generated with precompute_dataset.py first.
+#                     # Speeds up data loading significantly for large datasets.
+input_embedding:
+  n_peaks: 30
+  max_mz: 1600
+  decimal_accuracy: 1
+transformer:
+  d_model: 32
+  num_heads: 4
+  dropout: 0.1
+  ffn_hidden: 256
+  num_layers: 2
+  output_seq_length: 11
+comment: 'LSTM encoder with transformer decoder — architecture comparison'
+...

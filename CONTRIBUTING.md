@@ -21,7 +21,16 @@ By participating, you are expected to uphold this code.
    uv sync
    ```
 
-3. **Run all checks** (formatting, linting, type-checking, tests):
+3. **Install pre-commit hooks:**
+   ```bash
+   pre-commit install
+   ```
+   This runs ruff and mypy automatically on every `git commit`. To run manually on all files:
+   ```bash
+   pre-commit run --all-files
+   ```
+
+4. **Run all checks** (formatting, linting, type-checking, tests):
    ```bash
    make all
    ```
