@@ -86,7 +86,7 @@ class TestH5DatasetGetItem:
         n_peaks = transformer_config["input_embedding"]["n_peaks"]
 
         assert sample["features"].shape == (n_peaks,)
-        assert sample["features"].dtype == torch.int32
+        assert sample["features"].dtype == torch.int64
 
     def test_getitem_label_shape_transformer(
         self, transformer_config, lipid_library, test_hdf5_file

@@ -62,7 +62,7 @@ def precompute_dataset(
 
             # Convert to integer m/z indices
             mz_values = peaks[:, 0]
-            features = np.rint(mz_values * (10**decimal_accuracy)).astype(np.int32)
+            features = np.rint(mz_values * (10**decimal_accuracy)).astype(np.int64)
 
             # Filter out peaks outside embedding vocab range
             features[features >= max_index] = 0

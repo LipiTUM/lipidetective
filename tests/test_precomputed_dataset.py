@@ -99,7 +99,7 @@ class TestPrecomputedDatasetGetItem:
         n_peaks = transformer_config["input_embedding"]["n_peaks"]
 
         assert sample["features"].shape == (n_peaks,)
-        assert sample["features"].dtype == torch.int32
+        assert sample["features"].dtype == torch.int64
 
     def test_getitem_label_shape(self, transformer_config, lipid_library, test_parquet_file):
         """Label should be padded to output_seq_length."""

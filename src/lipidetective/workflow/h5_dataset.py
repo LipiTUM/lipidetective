@@ -54,7 +54,7 @@ class PrecomputedDataset(Dataset[dict[str, Any]]):
 
     def __getitem__(self, index: int) -> dict[str, Any]:
         name = self.dataset_names[index]
-        features = torch.IntTensor(self.features_cache[name])
+        features = torch.LongTensor(self.features_cache[name])
         attrs = self.attrs_cache[name]
 
         sample_label, sample_info = self.lipid_librarian.get_transformer_label(
@@ -124,7 +124,7 @@ class H5Dataset(Dataset[dict[str, Any]]):
         if self.network_type in ("transformer", "lstm"):
             # Extract only sorted m/z values as we don't need the intensities for the transformer input
             mz_values = peaks[:, 0]
-            features = torch.IntTensor(np.rint(mz_values * (10**self.decimal_accuracy)))
+            features = torch.LongTensor(np.rint(mz_values * (10**self.decimal_accuracy)))
 
             # Filter out peaks with m/z >= max_mz (outside embedding vocab range)
             max_index = self.config["input_embedding"]["max_mz"] * 10**self.decimal_accuracy
