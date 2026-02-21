@@ -14,6 +14,11 @@ class LSTMNetwork(TransformerNetwork):
     Replaces the transformer encoder with a bidirectional LSTM while reusing the
     full transformer decoder, beam search, and token vocabulary from TransformerNetwork.
     This enables a direct architecture comparison: the only variable is the encoder.
+
+    TODO: LSTMNetwork inheriting from TransformerNetwork is an architectural workaround.
+    The right design is an abstract EncoderDecoderNetwork base class from which both
+    TransformerNetwork and LSTMNetwork inherit, each with their own config section.
+    Until then, LSTMEncoder reads from config["transformer"] for shared parameters.
     """
 
     def __init__(self, config: dict[str, Any], output_attentions: bool = False) -> None:
