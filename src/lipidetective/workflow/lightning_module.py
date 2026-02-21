@@ -150,6 +150,9 @@ class LightningModule(pl.LightningModule):
 
             output = self.model(features, tgt_input)
 
+            # TODO: per-step training accuracy disabled for performance. To re-enable,
+            # uncomment the block below and pass accuracy_dict to self.log_dict().
+            # logging.py handles missing metrics gracefully (logs "N/A" when absent).
             # output_tokens = torch.argmax(output, dim=2)
             # is_last_epoch = self.current_epoch == self.nr_epochs
 
