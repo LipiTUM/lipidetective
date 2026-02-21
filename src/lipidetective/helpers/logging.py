@@ -552,13 +552,18 @@ class CustomLogger(Logger):
         # Optional. Any code that needs to be run after training finishes goes here
         if self.do_training:
             train_csv = pd.read_csv(self.train_csv_path)
-            self.plot_loss_and_accuracy(train_csv, "training", self.save_path)
 
             if self.model not in ("transformer", "lstm"):
+                self.plot_loss_and_accuracy(train_csv, "training", self.save_path)
                 self.plot_loss_and_mae(train_csv, "training", self.save_path)
                 self.plot_loss_and_r2(train_csv, "training", self.save_path)
             else:
-                self.plot_loss_and_both_accuracies(train_csv, "training", self.save_path)
+                # Accuracy is not tracked during training_step for performance reasons,
+                # so only the loss plot is generated.
+                self.plot_loss(train_csv, "training", self.save_path)
+                # To re-enable accuracy plots, restore train_custom_accuracy updates in
+                # training_step and uncomment:
+                # self.plot_loss_and_both_accuracies(train_csv, "training", self.save_path)
 
         if self.do_validation:
             val_csv = pd.read_csv(self.val_csv_path)
@@ -656,6 +661,28 @@ class CustomLogger(Logger):
         calculated_scores_df.set_index("lipid", inplace=True)
 
         return calculated_scores_df
+
+    def plot_loss(self, df: pd.DataFrame, workflow: str, output_folder: str) -> None:
+        plot_name = (
+            f"plot_loss_{workflow}_{self.fold}.png"
+            if self.fold != "."
+            else f"plot_loss_{workflow}.png"
+        )
+
+        df.index = df.epoch
+
+        figure = plt.figure(figsize=(12, 10))
+
+        ax1 = sns.lineplot(data=df.loss, color="orange")
+        plt.ylabel("Loss", fontsize=14)
+        ax1.set_yscale("log")
+        plt.xlabel("Epoch", fontsize=14)
+        ax1.legend(["Loss"], loc=(1.15, 0.92), frameon=False, fontsize=13)
+
+        plt.title("Loss per Epoch", fontsize=16)
+        plt.tight_layout(w_pad=4)
+        plt.savefig(os.path.join(output_folder, plot_name), dpi=300)
+        plt.close(figure)
 
     def plot_loss_and_accuracy(self, df: pd.DataFrame, workflow: str, output_folder: str) -> None:
         plot_name = (

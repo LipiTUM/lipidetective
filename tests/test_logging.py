@@ -809,8 +809,9 @@ class TestCustomLoggerFinalize:
         # finalize should run without error
         logger.finalize(status="success")
 
-        # Should have created plot files (actual filenames from source)
-        assert os.path.exists(os.path.join(logger.save_path, "plot_loss_accuracy_training.png"))
+        # Transformer training only generates the loss plot (accuracy tracking is disabled
+        # for performance; see training_step in lightning_module.py)
+        assert os.path.exists(os.path.join(logger.save_path, "plot_loss_training.png"))
 
     def test_finalize_validation_transformer(self, tmp_path):
         """finalize should create validation plots for transformer."""

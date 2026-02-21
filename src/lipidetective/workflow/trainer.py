@@ -206,10 +206,13 @@ class Trainer:
 
             if self.config["model"] in ("transformer", "lstm"):
                 custom_logger.save_lipid_wise_metrics(
-                    pl_module.train_custom_accuracy.metric.get_confusion_matrix(),  # type: ignore[operator, union-attr]
-                    trainset_lipids[fold],
-                    pl_module.val_custom_accuracy.metric.get_confusion_matrix(),  # type: ignore[operator, union-attr]
-                    valset_lipids[fold],
+                    # Train confusion matrix disabled: train_custom_accuracy is not updated
+                    # during training_step for performance reasons. To re-enable, implement
+                    # a post-training evaluation pass and uncomment:
+                    # pl_module.train_custom_accuracy.metric.get_confusion_matrix(),  # type: ignore[operator, union-attr]
+                    # trainset_lipids[fold],
+                    val_confusion_matrix=pl_module.val_custom_accuracy.metric.get_confusion_matrix(),  # type: ignore[operator, union-attr]
+                    val_lipids=valset_lipids[fold],
                 )
 
             if self.config["workflow"]["save_model"]:
@@ -265,11 +268,14 @@ class Trainer:
 
         trainer.fit(model=pl_module, train_dataloaders=data_loader)
 
-        if self.config["model"] in ("transformer", "lstm"):
-            custom_logger.save_lipid_wise_metrics(
-                pl_module.train_custom_accuracy.metric.get_confusion_matrix(),  # type: ignore[operator, union-attr]
-                dataset_lipids,
-            )
+        # Train confusion matrix disabled: train_custom_accuracy is not updated
+        # during training_step for performance reasons. To re-enable, implement
+        # a post-training evaluation pass and uncomment:
+        # if self.config["model"] in ("transformer", "lstm"):
+        #     custom_logger.save_lipid_wise_metrics(
+        #         pl_module.train_custom_accuracy.metric.get_confusion_matrix(),  # type: ignore[operator, union-attr]
+        #         dataset_lipids,
+        #     )
 
         if self.config["workflow"]["save_model"]:
             pl_module.save_model(self.output_folder)
