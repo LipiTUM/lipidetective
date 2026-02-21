@@ -5,7 +5,7 @@ from typing import Any
 import torch.nn as nn
 from torch import Tensor
 
-from lipidetective.models.transformer_network import Encoder, TransformerNetwork
+from lipidetective.models.transformer_network import PeakEncoder, TransformerNetwork
 
 
 class LSTMNetwork(TransformerNetwork):
@@ -25,8 +25,10 @@ class LSTMNetwork(TransformerNetwork):
         # Initialize the parent (builds decoder, final_lin_layer, tokens, etc.)
         super().__init__(config, output_attentions=False)
 
-        # Override the encoder with an LSTM-based encoder
-        self.encoder = LSTMEncoder(config)
+        # Override the encoder with an LSTM-based encoder. LSTMEncoder inherits from
+        # nn.Module rather than Encoder (to avoid the unused TransformerEncoder stack),
+        # so the assignment widens the declared type — intentional, see TODO above.
+        self.encoder = LSTMEncoder(config)  # type: ignore[assignment]
 
         # Attention extraction is not supported for the LSTM encoder
         self.output_attentions = False
@@ -35,7 +37,7 @@ class LSTMNetwork(TransformerNetwork):
         raise NotImplementedError("Attention extraction is not supported for LSTMNetwork")
 
 
-class LSTMEncoder(Encoder):
+class LSTMEncoder(nn.Module):
     """LSTM encoder that produces the same output shape as the transformer encoder.
 
     Uses the same PeakEncoder (m/z embedding + positional encoding) as the transformer,
@@ -44,8 +46,9 @@ class LSTMEncoder(Encoder):
     """
 
     def __init__(self, config: dict[str, Any]) -> None:
-        super().__init__(config)
+        super().__init__()
         d_model = config["transformer"]["d_model"]
+        self.input_encoder = PeakEncoder(config)
         num_layers = config["transformer"]["num_layers"]
         dropout = config["transformer"]["dropout"] if num_layers > 1 else 0.0
 
