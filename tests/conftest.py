@@ -130,6 +130,37 @@ def test_hdf5_file(tmp_path, lipid_library):
 
 
 @pytest.fixture
+def test_parquet_file(tmp_path, lipid_library):
+    """Create a temporary Parquet file with 3 sample spectra for testing."""
+    import pyarrow as pa
+    import pyarrow.parquet as pq
+
+    parquet_path = tmp_path / "test_dataset.parquet"
+
+    # Use lipids confirmed to exist in the library with a known valid adduct
+    valid_species = list(lipid_library.molecular_lipid_species.keys())
+    sample_lipids = [(species, "[M+H]+") for species in valid_species[:3]]
+    dataset_names = [f"spectrum_{i}" for i in range(3)]
+    n_peaks = 30
+
+    # Pre-computed features are integer m/z values (m/z * 10^decimal_accuracy)
+    rng = np.random.default_rng(42)
+    features_list = [sorted(rng.integers(100, 1600, n_peaks).tolist()) for _ in range(3)]
+
+    table = pa.table(
+        {
+            "dataset_name": pa.array(dataset_names, type=pa.string()),
+            "features": pa.array(features_list),
+            "lipid_species": pa.array([lp[0] for lp in sample_lipids]),
+            "adduct": pa.array([lp[1] for lp in sample_lipids]),
+        }
+    )
+    pq.write_table(table, parquet_path)
+
+    return str(parquet_path), dataset_names, sample_lipids
+
+
+@pytest.fixture
 def rf_instance(monkeypatch):
     """Create a RandomForest instance with mocked YAML loading."""
 
