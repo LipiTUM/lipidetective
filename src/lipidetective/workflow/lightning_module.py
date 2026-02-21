@@ -22,6 +22,7 @@ from lipidetective.helpers.utils import (
 )
 from lipidetective.models.convolutional_network import ConvolutionalNetwork
 from lipidetective.models.feedforward_network import FeedForwardNetwork
+from lipidetective.models.lstm_network import LSTMNetwork
 from lipidetective.models.transformer_network import TransformerNetwork
 
 
@@ -149,21 +150,21 @@ class LightningModule(pl.LightningModule):
 
             output = self.model(features, tgt_input)
 
-            output_tokens = torch.argmax(output, dim=2)
-            is_last_epoch = self.current_epoch == self.nr_epochs
+            # output_tokens = torch.argmax(output, dim=2)
+            # is_last_epoch = self.current_epoch == self.nr_epochs
 
-            assert self.train_custom_accuracy is not None
-            accuracy_dict = self.train_custom_accuracy(
-                output_tokens, tgt_expected, "transformer", is_last_epoch
-            )
+            # assert self.train_custom_accuracy is not None
+            # accuracy_dict = self.train_custom_accuracy(
+            #     output_tokens, tgt_expected, "transformer", is_last_epoch
+            # )
 
-            if (logger := self._get_custom_logger()) is not None:
-                preds_vs_labels = self.get_preds_vs_labels(
-                    batch_idx, output_tokens, tgt_expected, dataset_path
-                )
-                assert self.train_predictions is not None
-                self.train_predictions(preds_vs_labels)
-                logger.log_predictions(self.train_predictions, batch_idx, "train")
+            # if (logger := self._get_custom_logger()) is not None:
+            #     preds_vs_labels = self.get_preds_vs_labels(
+            #         batch_idx, output_tokens, tgt_expected, dataset_path
+            #     )
+            #     assert self.train_predictions is not None
+            #     self.train_predictions(preds_vs_labels)
+            #     logger.log_predictions(self.train_predictions, batch_idx, "train")
 
             output = torch.transpose(output, 1, 2)
             loss = nn.functional.cross_entropy(output, tgt_expected)
@@ -176,22 +177,22 @@ class LightningModule(pl.LightningModule):
                 sync_dist=True,
                 batch_size=self.batch_size,
             )
-            self.log_dict(
-                accuracy_dict,
-                on_step=True,
-                on_epoch=True,
-                sync_dist=True,
-                batch_size=self.batch_size,
-            )
+            # self.log_dict(
+            #     accuracy_dict,
+            #     on_step=True,
+            #     on_epoch=True,
+            #     sync_dist=True,
+            #     batch_size=self.batch_size,
+            # )
 
-            if "wandb" in self.config and not self.config["workflow"]["tune"]:
-                wandb.log(
-                    {
-                        "train_loss": loss.item(),
-                        "train_accuracy": accuracy_dict["customaccuracy_train_accuracy"],
-                        "train_mean_accuracy": accuracy_dict["customaccuracy_train_mean_accuracy"],
-                    }
-                )
+            # if "wandb" in self.config and not self.config["workflow"]["tune"]:
+            #     wandb.log(
+            #         {
+            #             "train_loss": loss.item(),
+            #             "train_accuracy": accuracy_dict["customaccuracy_train_accuracy"],
+            #             "train_mean_accuracy": accuracy_dict["customaccuracy_train_mean_accuracy"],
+            #         }
+            #     )
 
         else:
             output = self.model(features)
@@ -463,6 +464,8 @@ class LightningModule(pl.LightningModule):
             return ConvolutionalNetwork(self.config)
         elif model_type == "transformer":
             return TransformerNetwork(self.config)
+        elif model_type == "lstm":
+            return LSTMNetwork(self.config)
         elif model_type == "feedforward":
             return FeedForwardNetwork(self.config)
         else:
