@@ -13,6 +13,8 @@ files:
    model_config: null
    output: 'output'
    splitting_instructions: 'validation_splits/train_val_split.yaml'
+   precomputed: False  # Set to True to use pre-computed Parquet features instead of raw HDF5.
+                       # Parquet files must be generated with precompute_dataset.py first.
 workflow:
   train: True
   validate: True
@@ -42,6 +44,9 @@ predict:
 # Uses the same input_embedding and transformer config sections as the transformer model.
 # The LSTM encoder reuses d_model, num_layers, and dropout from the transformer section.
 # num_heads and ffn_hidden are only used by the transformer decoder.
+# precomputed: False  # Set to True to load pre-computed Parquet features instead of raw HDF5.
+#                     # Parquet files must be generated with precompute_dataset.py first.
+#                     # Speeds up data loading significantly for large datasets.
 input_embedding:
   n_peaks: 30
   max_mz: 1600

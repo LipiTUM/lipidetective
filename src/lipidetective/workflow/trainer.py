@@ -98,7 +98,7 @@ class Trainer:
 
     def _get_dataset_names(self, file_path: str) -> list[str]:
         """Get dataset names from HDF5 or Parquet file."""
-        if self.config.get("precomputed", False):
+        if self.config.get("files", {}).get("precomputed", False):
             import pyarrow as pa
             import pyarrow.parquet as pq
 
@@ -116,7 +116,7 @@ class Trainer:
         self, dataset_names: list[str], file_path: str
     ) -> H5Dataset | PrecomputedDataset:
         """Create the appropriate dataset based on whether precomputed data is available."""
-        if self.config.get("precomputed", False):
+        if self.config.get("files", {}).get("precomputed", False):
             logging.info(
                 f"Using PrecomputedDataset ({len(dataset_names)} spectra from {file_path})"
             )
