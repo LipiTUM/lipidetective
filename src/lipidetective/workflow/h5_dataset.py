@@ -49,6 +49,12 @@ class PrecomputedDataset(Dataset[dict[str, Any]]):
                     "adduct": table.column("adduct")[i].as_py(),
                 }
 
+        missing = name_set - self.features_cache.keys()
+        if missing:
+            raise ValueError(
+                f"{len(missing)} dataset name(s) not found in {file_path}: {sorted(missing)}"
+            )
+
     def __len__(self) -> int:
         return self.dataset_len
 
