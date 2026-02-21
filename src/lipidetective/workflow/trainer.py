@@ -74,6 +74,7 @@ class Trainer:
             self.lipid_librarian = LipidLibrary()
             self.evaluator = Evaluator(self.lipid_librarian)
 
+            self.accelerator = "auto"
             if torch.cuda.is_available():
                 # This sets a list of GPU names so one can choose exactly which GPUs to use, otherwise it uses all
                 if self.config["cuda"]["gpu_nr"]:
@@ -193,6 +194,7 @@ class Trainer:
             trainer = pl.Trainer(
                 max_epochs=self.config["training"]["epochs"],
                 callbacks=LearningRateLoggingCallback(),
+                accelerator=self.accelerator,
                 devices=self.devices,
                 default_root_dir=self.output_folder,
                 logger=[custom_logger, tb_logger, csv_logger],
@@ -254,6 +256,7 @@ class Trainer:
         trainer = pl.Trainer(
             max_epochs=self.config["training"]["epochs"],
             callbacks=LearningRateLoggingCallback(),
+            accelerator=self.accelerator,
             logger=custom_logger,
             devices=self.devices,
             default_root_dir=self.output_folder,
@@ -304,6 +307,7 @@ class Trainer:
 
         trainer = pl.Trainer(
             callbacks=LearningRateLoggingCallback(),
+            accelerator=self.accelerator,
             logger=custom_logger,
             devices=1,
             deterministic=True,
@@ -337,6 +341,7 @@ class Trainer:
 
         trainer = pl.Trainer(
             callbacks=LearningRateLoggingCallback(),
+            accelerator=self.accelerator,
             logger=pred_logger,
             devices=1,
             deterministic=True,
@@ -460,6 +465,7 @@ class Trainer:
 
         trainer = pl.Trainer(
             max_epochs=num_epochs,
+            accelerator=self.accelerator,
             devices=self.devices,
             default_root_dir=self.output_folder,
             callbacks=[TuneReportCheckpointCallback(val_metrics, on="validation_end")],
