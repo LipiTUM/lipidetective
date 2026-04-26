@@ -113,7 +113,7 @@ class TestLSTMNetworkPredict:
         assert predictions.shape == (batch_size, seq_length - 1)
 
     def test_predict_greedy_returns_correct_shape(self, transformer_config):
-        """predict_greedy() should return same shape as beam search predict."""
+        """Greedy strategy should return same shape as beam search predict."""
         model = LSTMNetwork(transformer_config)
         model.eval()
 
@@ -124,7 +124,7 @@ class TestLSTMNetworkPredict:
         src = torch.randint(1, 1000, (batch_size, n_peaks))
 
         with torch.no_grad():
-            predictions = model.predict_greedy(src)
+            predictions = model.predict(src, decode_strategy="greedy")
 
         assert predictions.shape == (batch_size, seq_length - 1)
 

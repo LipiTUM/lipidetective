@@ -64,6 +64,7 @@ transformer:
   ffn_hidden: 256
   num_layers: 2
   output_seq_length: 11
+  decode_strategy: 'beam'  # 'beam' or 'greedy'. Can be overridden per predict() call.
 # wandb: # Uncomment if you want to use wandb
 #  group: 'Debugging'
 # logging:

@@ -1,5 +1,6 @@
 """Tests for TransformerNetwork and related classes."""
 
+import pytest
 import torch
 
 from lipidetective.models.transformer_network import (
@@ -132,7 +133,7 @@ class TestTransformerPredict:
         assert predictions.shape == (batch_size, seq_length - 1)
 
     def test_predict_greedy_returns_correct_shape(self, transformer_config):
-        """Greedy predict should return same shape as beam search."""
+        """Greedy strategy should return same shape as beam search."""
         model = TransformerNetwork(transformer_config)
         model.eval()
 
@@ -143,9 +144,32 @@ class TestTransformerPredict:
         src = torch.randint(1, 1000, (batch_size, n_peaks))
 
         with torch.no_grad():
-            predictions = model.predict_greedy(src)
+            predictions = model.predict(src, decode_strategy="greedy")
 
         assert predictions.shape == (batch_size, seq_length - 1)
+
+    def test_predict_config_strategy_used_when_no_override(self, transformer_config):
+        """predict() should use config decode_strategy when no override is given."""
+        transformer_config["transformer"]["decode_strategy"] = "greedy"
+        model = TransformerNetwork(transformer_config)
+        model.eval()
+
+        batch_size = 2
+        n_peaks = transformer_config["input_embedding"]["n_peaks"]
+        seq_length = transformer_config["transformer"]["output_seq_length"]
+
+        src = torch.randint(1, 1000, (batch_size, n_peaks))
+
+        with torch.no_grad():
+            predictions = model.predict(src)
+
+        assert predictions.shape == (batch_size, seq_length - 1)
+
+    def test_predict_invalid_strategy_raises(self, transformer_config):
+        """An unknown decode_strategy should raise ValueError at model init."""
+        transformer_config["transformer"]["decode_strategy"] = "invalid"
+        with pytest.raises(ValueError, match="decode_strategy"):
+            TransformerNetwork(transformer_config)
 
 
 class TestEncoder:
@@ -294,26 +318,6 @@ class TestTransformerPredictTop3:
             _, tokens = model.predict_top_3(src)
 
         assert tokens.shape == (batch_size, 3, seq_length)
-
-
-class TestTransformerPredictBeamDecode:
-    """Tests for predict_beam_decode method."""
-
-    def test_predict_beam_decode_returns_correct_shape(self, transformer_config):
-        """predict_beam_decode should return same shape as predict."""
-        model = TransformerNetwork(transformer_config)
-        model.eval()
-
-        batch_size = 2
-        n_peaks = transformer_config["input_embedding"]["n_peaks"]
-        seq_length = transformer_config["transformer"]["output_seq_length"]
-
-        src = torch.randint(1, 1000, (batch_size, n_peaks))
-
-        with torch.no_grad():
-            predictions = model.predict_beam_decode(src)
-
-        assert predictions.shape == (batch_size, seq_length - 1)
 
 
 class TestTransformerReturnEncoderEmbedding:

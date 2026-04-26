@@ -3,7 +3,7 @@ from __future__ import annotations
 import math
 import os
 import pathlib
-from typing import Any
+from typing import Any, Literal
 
 import torch
 import torch.nn as nn
@@ -24,6 +24,15 @@ class TransformerNetwork(nn.Module):
         cwd = pathlib.Path(__file__).parent.parent.resolve()
         self.tokens = read_yaml(os.path.join(cwd, "lipid_info/lipid_components_tokens.yaml"))
         out_vocab_size = len(self.tokens)
+
+        valid_strategies = ("beam", "greedy")
+        self.decode_strategy: Literal["beam", "greedy"] = config["transformer"].get(
+            "decode_strategy", "beam"
+        )
+        if self.decode_strategy not in valid_strategies:
+            raise ValueError(
+                f"Invalid decode_strategy {self.decode_strategy!r}. Must be one of {valid_strategies}."
+            )
 
         self.encoder = Encoder(config)
         self.decoder = Decoder(config, out_vocab_size)
@@ -61,13 +70,23 @@ class TransformerNetwork(nn.Module):
 
         return src_padding_mask, tgt_padding_mask, nopeak_mask
 
-    def predict(self, src: Tensor) -> Tensor:
+    def predict(
+        self, src: Tensor, decode_strategy: Literal["beam", "greedy"] | None = None
+    ) -> Tensor:
+        strategy = decode_strategy if decode_strategy is not None else self.decode_strategy
+
         src_padding_mask = src == 0
         tgt = (torch.zeros((src.shape[0], self.seq_length))).type_as(src).long()
         tgt[:, 0] = 1
 
         encoder_output = self.encoder(src, src_padding_mask)
-        self.beam_decode(encoder_output, tgt, src_padding_mask)
+
+        if strategy == "beam":
+            self.beam_decode(encoder_output, tgt, src_padding_mask)
+        elif strategy == "greedy":
+            self.greedy_decode(encoder_output, tgt, src_padding_mask)
+        else:
+            raise ValueError(f"Unknown decode_strategy {strategy!r}. Must be 'beam' or 'greedy'.")
 
         return tgt[:, 1:]
 
@@ -126,10 +145,12 @@ class TransformerNetwork(nn.Module):
 
             top3_tokens = torch.gather(tokens, dim=1, index=top3_idx)
 
-            top3_idx_unsqueezed = top3_idx.unsqueeze(2)
-            top3_idx_unsqueezed = top3_idx_unsqueezed.expand(-1, -1, idx)
-            top3_idx_unsqueezed = torch.floor_divide(top3_idx_unsqueezed, 3)
-            top3_beam_tokens = torch.gather(beam_tokens, dim=1, index=top3_idx_unsqueezed)
+            # top3_idx indexes into a flat list of nr_beams*nr_beams candidates (all beams
+            # concatenated). Floor-dividing by nr_beams recovers which beam each winner
+            # came from. Expand repeats the beam index across the prefix length for gather.
+            source_beam_idx = torch.floor_divide(top3_idx, nr_beams)
+            source_beam_idx = source_beam_idx.unsqueeze(2).expand(-1, -1, idx)
+            top3_beam_tokens = torch.gather(beam_tokens, dim=1, index=source_beam_idx)
 
             for beam_nr, beam in beam_cache.items():
                 beam_tokens = top3_beam_tokens[:, beam_nr]
@@ -148,26 +169,6 @@ class TransformerNetwork(nn.Module):
         final_tokens = torch.stack([beam["tokens"] for beam in beam_cache.values()], dim=1)
 
         return final_probabilities, final_tokens
-
-    def predict_beam_decode(self, src: Tensor) -> Tensor:
-        src_padding_mask = src == 0
-        tgt = (torch.zeros((src.shape[0], self.seq_length))).type_as(src).long()
-        tgt[:, 0] = 1
-
-        encoder_output = self.encoder(src, src_padding_mask)
-        self.beam_decode(encoder_output, tgt, src_padding_mask)
-
-        return tgt[:, 1:]
-
-    def predict_greedy(self, src: Tensor) -> Tensor:
-        src_padding_mask = src == 0
-        tgt = (torch.zeros((src.shape[0], self.seq_length))).type_as(src).long()
-        tgt[:, 0] = 1
-
-        encoder_output = self.encoder(src, src_padding_mask)
-        self.greedy_decode(encoder_output, tgt, src_padding_mask)
-
-        return tgt[:, 1:]
 
     def return_encoder_embedding(self, src: Tensor) -> Tensor:
         src_padding_mask = src == 0
@@ -239,12 +240,12 @@ class TransformerNetwork(nn.Module):
 
             top3_tokens = torch.gather(tokens, dim=1, index=top3_idx)
 
-            top3_idx_unsqueezed = top3_idx.unsqueeze(2)
-            top3_idx_unsqueezed = top3_idx_unsqueezed.expand(
-                -1, -1, idx
-            )  # check again from here on, something in the top 3 beam token selection goes wrong. I think this should be just division by 3
-            top3_idx_unsqueezed = torch.floor_divide(top3_idx_unsqueezed, 3)
-            top3_beam_tokens = torch.gather(beam_tokens, dim=1, index=top3_idx_unsqueezed)
+            # top3_idx indexes into a flat list of nr_beams*nr_beams candidates (all beams
+            # concatenated). Floor-dividing by nr_beams recovers which beam each winner
+            # came from. Expand repeats the beam index across the prefix length for gather.
+            source_beam_idx = torch.floor_divide(top3_idx, nr_beams)
+            source_beam_idx = source_beam_idx.unsqueeze(2).expand(-1, -1, idx)
+            top3_beam_tokens = torch.gather(beam_tokens, dim=1, index=source_beam_idx)
 
             for beam_nr, beam in beam_cache.items():
                 beam_tokens = top3_beam_tokens[:, beam_nr]
