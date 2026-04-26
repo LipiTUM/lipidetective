@@ -8,7 +8,6 @@ from typing import Any, Literal
 import torch
 import torch.nn as nn
 from torch import Tensor
-from torch.autograd import Variable
 
 from lipidetective.helpers.utils import read_yaml
 
@@ -352,21 +351,18 @@ class Embedding(nn.Module):
 class PositionalEncoding(nn.Module):
     def __init__(self, d_model: int, max_seq_len: int = 50) -> None:
         super().__init__()
-        # create constant 'pe' matrix with values dependant on
-        # pos and i
         pe = torch.zeros(max_seq_len, d_model)
-        for pos in range(max_seq_len):
-            for i in range(0, d_model, 2):
-                pe[pos, i] = math.sin(pos / (10000 ** ((2 * i) / d_model)))
-                pe[pos, i + 1] = math.cos(pos / (10000 ** ((2 * (i + 1)) / d_model)))
-
-        pe = pe.unsqueeze(0)
-        self.register_buffer("pe", pe)
+        position = torch.arange(max_seq_len).unsqueeze(1)
+        # one frequency per column pair: div_term[k] = 1 / 10000^(2k/d_model)
+        div_term = torch.exp(torch.arange(0, d_model, 2) * (-math.log(10000.0) / d_model))
+        pe[:, 0::2] = torch.sin(position * div_term)
+        # slice div_term so cos columns match when d_model is odd
+        pe[:, 1::2] = torch.cos(position * div_term[: d_model // 2])
+        self.register_buffer("pe", pe.unsqueeze(0))
 
     def forward(self, x: Tensor) -> Tensor:
-        # add constant to embedding
         seq_len = x.size(1)
-        x = x + Variable(self.pe[:, :seq_len], requires_grad=False)  # type: ignore[index]
+        x = x + self.pe[:, :seq_len]  # type: ignore[index]
         return x
 
 
