@@ -4,6 +4,7 @@ from typing import Any
 
 import torch.nn as nn
 from torch import Tensor
+from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 
 from lipidetective.models.transformer_network import PeakEncoder, TransformerNetwork
 
@@ -65,19 +66,18 @@ class LSTMEncoder(nn.Module):
         self.projection = nn.Linear(2 * d_model, d_model)
 
     def forward(self, x: Tensor, mask: Tensor) -> Tensor:
-        # Embed m/z tokens (same as transformer encoder)
         x = self.input_encoder(x)
 
-        # Zero out padded positions before feeding to LSTM
-        x = x * (~mask).unsqueeze(-1).float()
+        # lengths must be on CPU — PyTorch requirement for pack_padded_sequence
+        lengths = (~mask).sum(dim=1).cpu().clamp(min=1)
+        packed = pack_padded_sequence(x, lengths, batch_first=True, enforce_sorted=False)
+        packed_output, _ = self.lstm(packed)
+        output: Tensor
+        output, _ = pad_packed_sequence(packed_output, batch_first=True, total_length=x.size(1))
 
-        # Run through bidirectional LSTM
-        output: Tensor = self.lstm(x)[0]
-
-        # Project back to d_model
         output = self.projection(output)
 
-        # Zero out padded positions in the output
+        # Zero out padded positions in the projected output
         output = output * (~mask).unsqueeze(-1).float()
 
         return output
