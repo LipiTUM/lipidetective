@@ -61,10 +61,8 @@ class TransformerNetwork(nn.Module):
         tgt_padding_mask = tgt == 0
 
         seq_length = tgt.size(1)
-        nopeak_mask = (
-            torch.triu(torch.ones(seq_length, seq_length), diagonal=1)
-            .bool()
-            .type_as(tgt_padding_mask)
+        nopeak_mask = torch.triu(
+            torch.ones(seq_length, seq_length, dtype=torch.bool, device=tgt.device), diagonal=1
         )
 
         return src_padding_mask, tgt_padding_mask, nopeak_mask
