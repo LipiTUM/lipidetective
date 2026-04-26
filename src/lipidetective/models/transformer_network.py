@@ -84,7 +84,7 @@ class TransformerNetwork(nn.Module):
         first_output = self.decoder(
             tgt[:, :1], encoder_output, memory_padding_mask=src_padding_mask
         )
-        first_output = nn.functional.softmax(self.final_lin_layer(first_output), dim=-1)
+        first_output = nn.functional.log_softmax(self.final_lin_layer(first_output), dim=-1)
 
         first_output_values, first_output_tokens = torch.topk(first_output[:, -1], nr_beams, dim=-1)
 
@@ -93,7 +93,7 @@ class TransformerNetwork(nn.Module):
             new_tgt = (torch.zeros((batch_size, self.seq_length))).type_as(tgt).long()
             new_tgt[:, 0] = 1
             new_tgt[:, 1] = first_output_tokens[:, i]
-            probabilities = torch.unsqueeze(torch.log(first_output_values[:, i]), dim=-1)
+            probabilities = torch.unsqueeze(first_output_values[:, i], dim=-1)
             beam_cache[i] = {"tokens": new_tgt, "probabilities": probabilities}
 
         for idx in range(2, self.seq_length):
@@ -109,8 +109,7 @@ class TransformerNetwork(nn.Module):
                 output = self.decoder(
                     tgt_temp, encoder_output, memory_padding_mask=src_padding_mask
                 )
-                output = nn.functional.softmax(self.final_lin_layer(output), dim=-1)
-                log_output = torch.log(output[:, -1])
+                log_output = nn.functional.log_softmax(self.final_lin_layer(output), dim=-1)[:, -1]
 
                 updated_probabilities = torch.add(log_output, beam["probabilities"])
                 output_probs, output_tokens = torch.topk(updated_probabilities, nr_beams, dim=-1)
@@ -196,7 +195,7 @@ class TransformerNetwork(nn.Module):
         first_output = self.decoder(
             tgt[:, :1], encoder_output, memory_padding_mask=memory_padding_mask
         )
-        first_output = nn.functional.softmax(self.final_lin_layer(first_output), dim=-1)
+        first_output = nn.functional.log_softmax(self.final_lin_layer(first_output), dim=-1)
 
         first_output_values, first_output_tokens = torch.topk(first_output[:, -1], nr_beams, dim=-1)
 
@@ -207,7 +206,7 @@ class TransformerNetwork(nn.Module):
             new_tgt = (torch.zeros((batch_size, self.seq_length))).type_as(tgt).long()
             new_tgt[:, 0] = 1
             new_tgt[:, 1] = first_output_tokens[:, i]
-            probabilities = torch.unsqueeze(torch.log(first_output_values[:, i]), dim=-1)
+            probabilities = torch.unsqueeze(first_output_values[:, i], dim=-1)
             beam_cache[i] = {"tokens": new_tgt, "probabilities": probabilities}
 
         for idx in range(2, self.seq_length):
@@ -223,8 +222,7 @@ class TransformerNetwork(nn.Module):
                 output = self.decoder(
                     tgt_temp, encoder_output, memory_padding_mask=memory_padding_mask
                 )
-                output = nn.functional.softmax(self.final_lin_layer(output), dim=-1)
-                log_output = torch.log(output[:, -1])
+                log_output = nn.functional.log_softmax(self.final_lin_layer(output), dim=-1)[:, -1]
 
                 updated_probabilities = torch.add(log_output, beam["probabilities"])
                 output_probs, output_tokens = torch.topk(updated_probabilities, nr_beams, dim=-1)
