@@ -246,6 +246,27 @@ class TestPositionalEncoding:
 
         assert torch.allclose(output1, output2)
 
+    def test_positional_encoding_matches_vaswani_formula(self):
+        """Encoding values should match PE(pos, 2i) = sin(pos / 10000^(2i/d_model)),
+        PE(pos, 2i+1) = cos(pos / 10000^(2i/d_model)) from Vaswani et al. (2017) —
+        i.e. the sin/cos pair at each dimension index i must share the same frequency.
+        Regression test for a bug where the cos term used frequency index (i+1)
+        instead of i, shifting it out of phase with its paired sin term.
+        """
+        d_model = 16
+        max_seq_len = 10
+        pe = PositionalEncoding(d_model, max_seq_len)
+
+        position = torch.arange(max_seq_len).unsqueeze(1).float()
+        i = torch.arange(0, d_model, 2).float()
+        freq = torch.pow(10000.0, i / d_model)
+
+        expected = torch.zeros(max_seq_len, d_model)
+        expected[:, 0::2] = torch.sin(position / freq)
+        expected[:, 1::2] = torch.cos(position / freq)
+
+        assert torch.allclose(pe.pe.squeeze(0), expected, atol=1e-6)
+
 
 class TestEmbedding:
     """Tests for Embedding layer."""

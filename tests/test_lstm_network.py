@@ -69,6 +69,38 @@ class TestLSTMEncoderOutputShape:
 
         assert torch.all(output[0, -5:] == 0)
 
+    def test_real_token_outputs_invariant_to_padding_length(self, transformer_config):
+        """Real-token outputs must not depend on how much padding follows them.
+
+        Regression test for the packed-sequence fix: without pack_padded_sequence,
+        the bidirectional LSTM's backward pass reads padding tokens before reaching
+        real positions, so real-token outputs drift depending on trailing padding.
+        """
+        encoder = LSTMEncoder(transformer_config)
+        encoder.eval()
+
+        n_peaks = transformer_config["input_embedding"]["n_peaks"]
+        real_len = 3
+        assert real_len + 2 <= n_peaks, "fixture n_peaks too small for this test"
+
+        torch.manual_seed(0)
+        real_tokens = torch.randint(1, 1000, (1, real_len))
+
+        def run(total_len: int) -> torch.Tensor:
+            src = torch.zeros(1, total_len, dtype=torch.long)
+            src[0, :real_len] = real_tokens
+            mask = torch.zeros(1, total_len, dtype=torch.bool)
+            mask[0, real_len:] = True
+            with torch.no_grad():
+                return encoder(src, mask)
+
+        output_short_pad = run(real_len + 1)
+        output_long_pad = run(n_peaks)
+
+        assert torch.allclose(
+            output_short_pad[0, :real_len], output_long_pad[0, :real_len], atol=1e-6
+        )
+
 
 class TestLSTMNetworkForward:
     """Tests for LSTMNetwork forward pass."""
